@@ -213,7 +213,7 @@ const downloadReport = (report: Report) => {
       
       <template #footer>
         <el-button @click="dialogVisible = false">关闭</el-button>
-        <el-button type="primary" @click="downloadReport(currentReport)">
+        <el-button type="primary" @click="currentReport && downloadReport(currentReport)">
           下载报告
         </el-button>
       </template>

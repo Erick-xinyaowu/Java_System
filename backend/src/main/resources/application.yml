@@ -39,8 +39,8 @@ mybatis:
 logging:
   level:
     root: INFO
-    com.erickwu.backend: DEBUG
-    com.erickwu.backend.mapper: DEBUG
+    "[com.erickwu.backend]": DEBUG
+    "[com.erickwu.backend.mapper]": DEBUG
 
 # JWT 配置
 jwt:

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { QuestionFilled, Check } from '@element-plus/icons-vue'
 
 // 测评结果类型
@@ -74,8 +74,20 @@ const answers = ref<Record<number, string>>({})
 const showResult = ref(false)
 const testResult = ref<TestResult | null>(null)
 
+// 问题数据类型
+interface QuestionOption {
+  value: string
+  label: string
+}
+
+interface Question {
+  id: number
+  question: string
+  options: QuestionOption[]
+}
+
 // 模拟问题数据
-const mockQuestions = [
+const mockQuestions: Question[] = [
   {
     id: 1,
     question: '在社交场合中，你更倾向于：',
@@ -187,6 +199,11 @@ const backToList = () => {
 const progress = () => {
   return Math.round(((currentQuestion.value + 1) / mockQuestions.length) * 100)
 }
+
+// 安全获取当前问题（mockQuestions 数组在初始化时就有数据，不会为空）
+const currentQuestionData = computed((): Question => {
+  return mockQuestions[currentQuestion.value]!
+})
 </script>
 
 <template>
@@ -268,12 +285,12 @@ const progress = () => {
           
           <div class="question-container">
             <h2 class="question-text">
-              {{ mockQuestions[currentQuestion].question }}
+              {{ currentQuestionData.question }}
             </h2>
             
             <div class="options-list">
               <div
-                v-for="option in mockQuestions[currentQuestion].options"
+                v-for="option in currentQuestionData.options"
                 :key="option.value"
                 class="option-item"
                 :class="{ selected: answers[currentQuestion] === option.value }"
@@ -316,10 +333,10 @@ const progress = () => {
           
           <div class="result-content">
             <div class="result-type">
-              <el-tag type="success" size="large">{{ testResult.type }}</el-tag>
+              <el-tag type="success" size="large">{{ testResult?.type }}</el-tag>
             </div>
-            <h1 class="result-title">{{ testResult.result }}</h1>
-            <p class="result-description">{{ testResult.description }}</p>
+            <h1 class="result-title">{{ testResult?.result }}</h1>
+            <p class="result-description">{{ testResult?.description }}</p>
             
             <el-divider />
             
@@ -327,7 +344,7 @@ const progress = () => {
               <h3>你的优势</h3>
               <div class="strengths-list">
                 <el-tag
-                  v-for="strength in testResult.strengths"
+                  v-for="strength in testResult?.strengths || []"
                   :key="strength"
                   type="primary"
                   effect="light"
@@ -341,7 +358,7 @@ const progress = () => {
               <h3>推荐职业方向</h3>
               <div class="careers-list">
                 <el-tag
-                  v-for="career in testResult.careers"
+                  v-for="career in testResult?.careers || []"
                   :key="career"
                   type="success"
                   effect="light"
@@ -354,7 +371,7 @@ const progress = () => {
             <div class="result-section">
               <h3>发展建议</h3>
               <ul class="suggestions-list">
-                <li v-for="(suggestion, index) in testResult.suggestions" :key="index">
+                <li v-for="(suggestion, index) in testResult?.suggestions || []" :key="index">
                   {{ suggestion }}
                 </li>
               </ul>
