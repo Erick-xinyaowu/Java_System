@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { PieChart, BarChart, LineChart } from 'echarts/charts'
@@ -10,6 +10,8 @@ import {
   GridComponent
 } from 'echarts/components'
 import VChart from 'vue-echarts'
+import { getDashboardOverview, getSkillDistribution, getLearningTrend } from '@/api/dashboard'
+import type { DashboardOverview, CategoryData, TrendData } from '@/api/dashboard'
 
 use([
   CanvasRenderer,
@@ -24,17 +26,33 @@ use([
 
 const loading = ref(true)
 
-// 统计卡片数据
-const stats = ref([
-  { label: '已完成测评', value: 3, color: '#4F46E5' },
-  { label: '简历完成度', value: '85%', color: '#059669' },
-  { label: '技能数量', value: 12, color: '#D97706' },
-  { label: '学习时长(h)', value: 156, color: '#DC2626' }
-])
+// 概览数据
+const overview = ref<DashboardOverview | null>(null)
 
-// 技能雷达图配置
-const skillOption = ref({
-  tooltip: { trigger: 'item' },
+// 统计卡片数据（计算属性）
+const stats = computed(() => {
+  if (!overview.value) {
+    return [
+      { label: '简历完成度', value: '-', color: '#059669' },
+      { label: '技能数量', value: '-', color: '#D97706' },
+      { label: '精通技能', value: '-', color: '#4F46E5' },
+      { label: '工作经历', value: '-', color: '#DC2626' }
+    ]
+  }
+  return [
+    { label: '简历完成度', value: `${overview.value.resumeCompleteness}%`, color: '#059669' },
+    { label: '技能数量', value: overview.value.totalSkills, color: '#D97706' },
+    { label: '精通技能', value: overview.value.expertSkills, color: '#4F46E5' },
+    { label: '工作经历', value: overview.value.workExperienceCount, color: '#DC2626' }
+  ]
+})
+
+// 技能分布数据
+const skillData = ref<CategoryData[]>([])
+
+// 技能饼图配置
+const skillOption = computed(() => ({
+  tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
   series: [
     {
       type: 'pie',
@@ -49,25 +67,30 @@ const skillOption = ref({
       emphasis: {
         label: { show: true, fontSize: 14, fontWeight: 'bold' }
       },
-      data: [
-        { value: 30, name: 'Java', itemStyle: { color: '#4F46E5' } },
-        { value: 25, name: 'Python', itemStyle: { color: '#059669' } },
-        { value: 20, name: 'Vue', itemStyle: { color: '#D97706' } },
-        { value: 15, name: 'SQL', itemStyle: { color: '#DC2626' } },
-        { value: 10, name: '其他', itemStyle: { color: '#64748b' } }
-      ]
+      data: skillData.value.length > 0 
+        ? skillData.value.map((item, index) => ({
+            value: item.value,
+            name: item.name,
+            itemStyle: { color: item.color || getColorByIndex(index) }
+          }))
+        : [{ value: 1, name: '暂无数据', itemStyle: { color: '#e5e7eb' } }]
     }
   ]
-})
+}))
 
-// 学习趋势图
-const trendOption = ref({
+// 学习趋势数据
+const trendData = ref<TrendData[]>([])
+
+// 学习趋势图配置
+const trendOption = computed(() => ({
   tooltip: { trigger: 'axis' },
   grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
   xAxis: {
     type: 'category',
     boundaryGap: false,
-    data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+    data: trendData.value.length > 0 
+      ? trendData.value.map(item => item.date)
+      : ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
   },
   yAxis: { type: 'value' },
   series: [
@@ -87,12 +110,14 @@ const trendOption = ref({
       },
       lineStyle: { color: '#4F46E5', width: 3 },
       itemStyle: { color: '#4F46E5' },
-      data: [3, 4, 2, 5, 4, 6, 4]
+      data: trendData.value.length > 0 
+        ? trendData.value.map(item => item.value)
+        : [0, 0, 0, 0, 0, 0, 0]
     }
   ]
-})
+}))
 
-// 成绩分布图
+// 成绩分布图（暂时保持静态，因跳过了学习记录模块）
 const gradeOption = ref({
   tooltip: { trigger: 'axis' },
   grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
@@ -121,10 +146,44 @@ const gradeOption = ref({
   ]
 })
 
-onMounted(() => {
-  setTimeout(() => {
+// 颜色数组
+const colors = ['#4F46E5', '#059669', '#D97706', '#DC2626', '#64748b', '#8B5CF6', '#06B6D4']
+
+function getColorByIndex(index: number): string {
+  return colors[index % colors.length]
+}
+
+// 加载数据
+async function loadDashboardData() {
+  loading.value = true
+  try {
+    // 并行请求所有数据
+    const [overviewRes, skillRes, trendRes] = await Promise.all([
+      getDashboardOverview(),
+      getSkillDistribution(),
+      getLearningTrend('7d')
+    ])
+
+    if (overviewRes.success) {
+      overview.value = overviewRes.data
+    }
+
+    if (skillRes.success) {
+      skillData.value = skillRes.data || []
+    }
+
+    if (trendRes.success) {
+      trendData.value = trendRes.data || []
+    }
+  } catch (error) {
+    console.error('加载仪表盘数据失败:', error)
+  } finally {
     loading.value = false
-  }, 500)
+  }
+}
+
+onMounted(() => {
+  loadDashboardData()
 })
 </script>
 

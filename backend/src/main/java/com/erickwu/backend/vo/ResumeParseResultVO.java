@@ -15,6 +15,7 @@ public class ResumeParseResultVO {
     private Long fileSize;
     private String rawText;
     private String parsedJson;
+    private Long versionId;  // 版本ID，用于前端跳转到分析报告
 
     // ==================== 基本信息 ====================
     private String candidateName;
@@ -134,6 +135,9 @@ public class ResumeParseResultVO {
 
     public String getParsedJson() { return parsedJson; }
     public void setParsedJson(String parsedJson) { this.parsedJson = parsedJson; }
+
+    public Long getVersionId() { return versionId; }
+    public void setVersionId(Long versionId) { this.versionId = versionId; }
 
     public String getCandidateName() { return candidateName; }
     public void setCandidateName(String candidateName) { this.candidateName = candidateName; }

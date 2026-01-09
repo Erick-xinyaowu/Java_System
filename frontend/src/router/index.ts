@@ -23,8 +23,8 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/resume',
     name: 'Resume',
-    component: () => import('@/pages/ResumePage.vue'),
-    meta: { title: '简历管理', requiresAuth: true }
+    component: () => import('@/pages/ResumeAnalysisPage.vue'),
+    meta: { title: '智能简历分析', requiresAuth: true }
   },
   {
     path: '/career-assessment',

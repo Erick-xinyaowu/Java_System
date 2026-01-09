@@ -314,4 +314,161 @@ public class ResumeParserService {
             return null;
         }
     }
+
+    /**
+     * 生成简历智能分析报告的系统提示词
+     */
+    private static final String RESUME_ANALYSIS_SYSTEM_PROMPT = """
+            你是一个专业的职业规划顾问和简历分析专家。请根据提供的简历信息，生成一份详细的智能分析报告。
+
+            报告必须使用Markdown格式，包含以下章节：
+
+            # 🧾 简历智能分析报告
+
+            ## 一、候选人概况
+            - 姓名、联系方式
+            - 当前状态（在校生/在职/待业等）
+            - 核心竞争力总结（2-3句话）
+
+            ## 二、教育背景分析
+            - 学历层次及学校评价
+            - 专业匹配度分析
+            - 学业成绩评估
+            - 教育亮点总结
+
+            ## 三、技能与能力画像
+            ### 3.1 技术技能
+            - 主要技术栈
+            - 技能广度与深度评估
+            - 技术趋势匹配度
+
+            ### 3.2 软技能
+            - 团队协作能力
+            - 沟通表达能力
+            - 领导力与项目管理能力
+            - 学习能力与适应性
+
+            ### 3.3 技能评级
+            用表格展示各项技能的星级评分（1-5星）
+
+            ## 四、实践与项目经验
+            ### 4.1 工作/实习经历
+            对每段经历进行分析：职责、价值与成长、成果评估
+
+            ### 4.2 项目经验
+            对每个项目分析：复杂度、技术难点与解决方案、个人贡献度
+
+            ### 4.3 竞赛与荣誉
+            竞赛成果和荣誉含金量分析
+
+            ## 五、职业发展建议
+            ### 5.1 优势分析
+            列出3-5个核心优势
+
+            ### 5.2 待提升领域
+            列出3-5个需要提升的方面
+
+            ### 5.3 职业方向建议
+            - 推荐职业方向（2-3个）
+            - 短期（6个月）发展建议
+            - 中期（1-2年）发展规划
+            - 长期（3-5年）职业目标
+
+            ### 5.4 技能提升路径
+            具体的学习建议和资源推荐
+
+            ## 六、综合评价
+            ### 6.1 整体评分
+            - 技术能力: ⭐⭐⭐⭐☆ (x/5)
+            - 项目经验: ⭐⭐⭐☆☆ (x/5)
+            - 发展潜力: ⭐⭐⭐⭐☆ (x/5)
+            - 综合评分: ⭐⭐⭐⭐☆ (x/5)
+
+            ### 6.2 推荐指数
+            ✅ 推荐录用 / ⚠️ 有保留推荐 / ❌ 暂不推荐
+            并给出具体理由
+
+            ### 6.3 一句话总结
+            用一句话概括候选人特点
+
+            注意事项：
+            1. 分析要客观、专业、有建设性
+            2. 评价要具体，避免空泛
+            3. 建议要可执行、有针对性
+            4. 格式要清晰、美观
+            """;
+
+    /**
+     * 生成简历智能分析报告
+     *
+     * @param parseResult 解析后的简历数据
+     * @return 分析报告（Markdown格式）
+     */
+    public String generateAnalysisReport(ResumeParseResultVO parseResult) {
+        // 构建简历摘要用于分析
+        StringBuilder resumeSummary = new StringBuilder();
+        resumeSummary.append("候选人姓名：").append(parseResult.getCandidateName()).append("\n");
+        resumeSummary.append("目标职位：").append(parseResult.getTargetPosition()).append("\n");
+        resumeSummary.append("个人简介：").append(parseResult.getSummary()).append("\n\n");
+
+        // 技能信息
+        resumeSummary.append("技能列表：\n");
+        if (parseResult.getSkills() != null) {
+            for (var skill : parseResult.getSkills()) {
+                String levelStr = switch (skill.getLevel()) {
+                    case 1 -> "了解";
+                    case 2 -> "熟悉";
+                    case 3 -> "掌握";
+                    case 4 -> "精通";
+                    case 5 -> "专家";
+                    default -> "未知";
+                };
+                resumeSummary.append("- ").append(skill.getName())
+                        .append(" (").append(levelStr).append(", ")
+                        .append(skill.getYears()).append("年经验, ")
+                        .append(skill.getCategory()).append(")\n");
+            }
+        }
+
+        // 教育经历
+        resumeSummary.append("\n教育经历：\n");
+        if (parseResult.getEducations() != null) {
+            for (var edu : parseResult.getEducations()) {
+                resumeSummary.append("- ").append(edu.getSchool())
+                        .append(", ").append(edu.getMajor())
+                        .append(", ").append(edu.getDegree())
+                        .append(" (").append(edu.getStartDate()).append(" - ").append(edu.getEndDate()).append(")\n");
+                if (edu.getDescription() != null) {
+                    resumeSummary.append("  描述：").append(edu.getDescription()).append("\n");
+                }
+            }
+        }
+
+        // 工作经历
+        resumeSummary.append("\n工作经历：\n");
+        if (parseResult.getWorkExperiences() != null) {
+            for (var work : parseResult.getWorkExperiences()) {
+                resumeSummary.append("- ").append(work.getCompany())
+                        .append(" - ").append(work.getPosition())
+                        .append(" (").append(work.getStartDate()).append(" - ")
+                        .append(work.getEndDate() != null ? work.getEndDate() : "至今").append(")\n");
+                if (work.getDescription() != null) {
+                    resumeSummary.append("  职责：").append(work.getDescription()).append("\n");
+                }
+                if (work.getAchievements() != null) {
+                    resumeSummary.append("  成就：").append(work.getAchievements()).append("\n");
+                }
+            }
+        }
+
+        // 原始简历文本
+        resumeSummary.append("\n原始简历内容：\n").append(parseResult.getRawText());
+
+        logger.info("开始生成简历分析报告...");
+        String report = llmService.chat(RESUME_ANALYSIS_SYSTEM_PROMPT,
+                "请根据以下简历信息生成智能分析报告：\n\n" + resumeSummary.toString());
+        logger.info("简历分析报告生成完成");
+
+        return report;
+    }
 }

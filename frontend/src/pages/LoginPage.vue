@@ -32,24 +32,20 @@ async function handleLogin() {
 
   loading.value = true
   try {
-    // 模拟登录（后端未实现时）
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    // 模拟 token
-    const mockToken = 'mock_token_' + Date.now()
-    userStore.setToken(mockToken)
-    userStore.setUserInfo({
-      id: 1,
+    // 调用真实后端 API
+    const res = await userStore.login({
       username: loginForm.username,
-      email: loginForm.username + '@example.com'
+      password: loginForm.password
     })
 
-    ElMessage.success('登录成功')
-
-    const redirect = route.query.redirect as string
-    router.push(redirect || '/dashboard')
-  } catch {
-    ElMessage.error('登录失败，请重试')
+    if (res.success) {
+      ElMessage.success('登录成功')
+      const redirect = route.query.redirect as string
+      router.push(redirect || '/dashboard')
+    }
+  } catch (error: any) {
+    console.error('登录失败:', error)
+    // 错误已在拦截器中处理
   } finally {
     loading.value = false
   }
@@ -66,14 +62,28 @@ async function handleRegister() {
     return
   }
 
+  if (registerForm.password.length < 6) {
+    ElMessage.warning('密码长度至少6位')
+    return
+  }
+
   loading.value = true
   try {
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    ElMessage.success('注册成功，请登录')
-    isLogin.value = true
-    loginForm.username = registerForm.username
-  } catch {
-    ElMessage.error('注册失败，请重试')
+    // 调用真实后端 API
+    const res = await userStore.register({
+      username: registerForm.username,
+      email: registerForm.email,
+      password: registerForm.password
+    })
+
+    if (res.success) {
+      ElMessage.success('注册成功')
+      // 注册成功后直接进入系统
+      router.push('/dashboard')
+    }
+  } catch (error: any) {
+    console.error('注册失败:', error)
+    // 错误已在拦截器中处理
   } finally {
     loading.value = false
   }

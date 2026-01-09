@@ -425,7 +425,10 @@ public class ResumeServiceImpl implements ResumeService {
             resumeMapper.insert(resume);
         }
 
-        // 3. 创建版本记录
+        // 3. 生成智能分析报告
+        String analysisReport = resumeParserService.generateAnalysisReport(parseResult);
+
+        // 4. 创建版本记录
         Integer maxVersion = resumeVersionMapper.getMaxVersionNumber(resume.getId());
         int newVersionNumber = (maxVersion == null ? 0 : maxVersion) + 1;
 
@@ -436,9 +439,13 @@ public class ResumeServiceImpl implements ResumeService {
         version.setFileSize(file.getSize());
         version.setRawText(parseResult.getRawText());
         version.setParsedData(parseResult.getParsedJson());
+        version.setAnalysisReport(analysisReport);  // 保存分析报告
         version.setUploadTime(LocalDateTime.now());
         version.setVersionNote(versionNote);
         resumeVersionMapper.insert(version);
+
+        // 5. 设置版本ID到返回结果，便于前端跳转
+        parseResult.setVersionId(version.getId());
 
         return parseResult;
     }

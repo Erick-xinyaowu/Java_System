@@ -1,5 +1,7 @@
 import request from './request'
 
+// ========== 请求参数类型 ==========
+
 export interface LoginParams {
   username: string
   password: string
@@ -11,18 +13,66 @@ export interface RegisterParams {
   email: string
 }
 
-export function login(data: LoginParams) {
+export interface UpdateUserParams {
+  email?: string
+  phone?: string
+  avatar?: string
+}
+
+// ========== 响应数据类型 ==========
+
+export interface LoginResponse {
+  success: boolean
+  code: number
+  message: string
+  data: {
+    token: string
+    userId: number
+    username: string
+    email: string
+  }
+}
+
+export interface UserInfoResponse {
+  success: boolean
+  code: number
+  message: string
+  data: {
+    id: number
+    username: string
+    email: string
+    phone?: string
+    avatar?: string
+    createdAt?: string
+  }
+}
+
+// ========== API 函数 ==========
+
+/**
+ * 用户登录
+ */
+export function login(data: LoginParams): Promise<LoginResponse> {
   return request.post('/user/login', data)
 }
 
-export function register(data: RegisterParams) {
+/**
+ * 用户注册
+ */
+export function register(data: RegisterParams): Promise<LoginResponse> {
   return request.post('/user/register', data)
 }
 
-export function getUserInfo() {
+/**
+ * 获取当前用户信息
+ */
+export function getUserInfo(): Promise<UserInfoResponse> {
   return request.get('/user/info')
 }
 
-export function updateUserInfo(data: Partial<RegisterParams>) {
-  return request.put('/user/info', data)
+/**
+ * 更新用户信息
+ */
+export function updateUserInfo(data: UpdateUserParams) {
+  return request.put('/user/update', data)
 }
