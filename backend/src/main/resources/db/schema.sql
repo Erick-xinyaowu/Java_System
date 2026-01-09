@@ -205,3 +205,26 @@ CREATE TABLE `career_dict` (
     KEY `idx_category` (`category`),
     KEY `idx_name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='职业字典表';
+
+-- =====================================================
+-- 10. 简历版本表（用于版本管理和分析历史）
+-- =====================================================
+DROP TABLE IF EXISTS `resume_version`;
+CREATE TABLE `resume_version` (
+    `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '版本ID',
+    `resume_id` BIGINT NOT NULL COMMENT '简历ID',
+    `version_number` INT NOT NULL DEFAULT 1 COMMENT '版本号',
+    `file_name` VARCHAR(255) DEFAULT NULL COMMENT '上传的文件名',
+    `file_size` BIGINT DEFAULT NULL COMMENT '文件大小（字节）',
+    `raw_text` LONGTEXT DEFAULT NULL COMMENT '原始文本内容',
+    `parsed_data` JSON DEFAULT NULL COMMENT '解析后的结构化数据（JSON格式）',
+    `analysis_report` LONGTEXT DEFAULT NULL COMMENT 'AI分析报告（Markdown格式）',
+    `analysis_metadata` JSON DEFAULT NULL COMMENT '分析元数据（用时、评分等）',
+    `upload_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '上传时间',
+    `version_note` VARCHAR(500) DEFAULT NULL COMMENT '版本备注',
+    PRIMARY KEY (`id`),
+    KEY `idx_resume_id` (`resume_id`),
+    KEY `idx_version_number` (`version_number`),
+    KEY `idx_upload_time` (`upload_time`),
+    CONSTRAINT `fk_version_resume` FOREIGN KEY (`resume_id`) REFERENCES `resume` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='简历版本表';
