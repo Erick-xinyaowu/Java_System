@@ -61,4 +61,10 @@ public interface EducationMapper {
      */
     @Delete("DELETE FROM education WHERE resume_id = #{resumeId}")
     int deleteByResumeId(@Param("resumeId") Long resumeId);
+
+    /**
+     * 统计简历的教育经历数量
+     */
+    @Select("SELECT COUNT(*) FROM education WHERE resume_id = #{resumeId}")
+    int countByResumeId(@Param("resumeId") Long resumeId);
 }

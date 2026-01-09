@@ -61,4 +61,10 @@ public interface WorkExperienceMapper {
      */
     @Delete("DELETE FROM work_experience WHERE resume_id = #{resumeId}")
     int deleteByResumeId(@Param("resumeId") Long resumeId);
+
+    /**
+     * 统计简历的工作经历数量
+     */
+    @Select("SELECT COUNT(*) FROM work_experience WHERE resume_id = #{resumeId}")
+    int countByResumeId(@Param("resumeId") Long resumeId);
 }

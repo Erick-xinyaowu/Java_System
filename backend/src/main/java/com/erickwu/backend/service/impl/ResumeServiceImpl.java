@@ -17,12 +17,14 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
  * 简历服务实现类
  */
 @Service
+@SuppressWarnings("null") // 抑制 BeanUtils.copyProperties 的 null 安全警告
 public class ResumeServiceImpl implements ResumeService {
 
     private final ResumeMapper resumeMapper;
