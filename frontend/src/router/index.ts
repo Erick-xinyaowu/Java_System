@@ -27,16 +27,10 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '智能简历分析', requiresAuth: true }
   },
   {
-    path: '/career-assessment',
-    name: 'CareerAssessment',
-    component: () => import('@/pages/CareerAssessmentPage.vue'),
-    meta: { title: '职业测评', requiresAuth: true }
-  },
-  {
-    path: '/career-report',
-    name: 'CareerReport',
-    component: () => import('@/pages/CareerReportPage.vue'),
-    meta: { title: '职业报告', requiresAuth: true }
+    path: '/ai-chat',
+    name: 'AIChat',
+    component: () => import('@/views/AIRecommendPage.vue'),
+    meta: { title: 'AI 职业顾问', requiresAuth: true }
   }
 ]
 

@@ -20,8 +20,10 @@ public class CorsConfig {
         // 允许的前端地址
         config.addAllowedOrigin("http://localhost:5173");
         config.addAllowedOrigin("http://localhost:5174");
+        config.addAllowedOrigin("http://localhost:3000");
         config.addAllowedOrigin("http://127.0.0.1:5173");
         config.addAllowedOrigin("http://127.0.0.1:5174");
+        config.addAllowedOrigin("http://127.0.0.1:3000");
         
         // 允许的请求头
         config.addAllowedHeader("*");

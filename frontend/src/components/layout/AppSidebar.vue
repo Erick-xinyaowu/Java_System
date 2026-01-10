@@ -6,8 +6,7 @@ import {
   House,
   DataAnalysis,
   Document,
-  Compass,
-  Reading
+  ChatDotSquare
 } from '@element-plus/icons-vue'
 
 const route = useRoute()
@@ -18,9 +17,8 @@ const isCollapsed = computed(() => layoutStore.isCollapsed)
 
 const menuItems = [
   { path: '/dashboard', title: '数据仪表盘', icon: DataAnalysis },
-  { path: '/resume', title: '简历管理', icon: Document },
-  { path: '/career-assessment', title: '职业测评', icon: Compass },
-  { path: '/career-report', title: '职业报告', icon: Reading }
+  { path: '/resume', title: '智能简历分析', icon: Document },
+  { path: '/ai-chat', title: 'AI 职业顾问', icon: ChatDotSquare }
 ]
 
 const activeMenu = computed(() => route.path)
