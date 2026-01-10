@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
 import { PieChart, BarChart, LineChart } from 'echarts/charts'
@@ -12,6 +13,8 @@ import {
 import VChart from 'vue-echarts'
 import { getDashboardOverview, getSkillDistribution, getLearningTrend } from '@/api/dashboard'
 import type { DashboardOverview, CategoryData, TrendData } from '@/api/dashboard'
+
+const router = useRouter()
 
 use([
   CanvasRenderer,
@@ -117,34 +120,20 @@ const trendOption = computed(() => ({
   ]
 }))
 
-// 成绩分布图（暂时保持静态，因跳过了学习记录模块）
-const gradeOption = ref({
-  tooltip: { trigger: 'axis' },
-  grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-  xAxis: {
-    type: 'category',
-    data: ['高数', '英语', '数据结构', '操作系统', '计网', '数据库']
-  },
-  yAxis: { type: 'value', max: 100 },
-  series: [
-    {
-      type: 'bar',
-      barWidth: '50%',
-      itemStyle: {
-        borderRadius: [8, 8, 0, 0],
-        color: {
-          type: 'linear',
-          x: 0, y: 0, x2: 0, y2: 1,
-          colorStops: [
-            { offset: 0, color: '#4F46E5' },
-            { offset: 1, color: '#7C3AED' }
-          ]
-        }
-      },
-      data: [92, 85, 88, 90, 78, 95]
-    }
-  ]
-})
+// 职业小贴士
+const careerTips = ref([
+  { icon: '💡', title: '优化简历', desc: '用STAR法则描述工作经历，突出量化成果' },
+  { icon: '🎯', title: '技能提升', desc: '根据目标岗位要求，优先学习核心技能' },
+  { icon: '📝', title: '面试准备', desc: '整理项目经验，准备常见技术面试题' },
+  { icon: '🌐', title: '人脉拓展', desc: '参加行业活动，建立职业社交网络' }
+])
+
+// 快捷操作
+const quickActions = ref([
+  { icon: '📄', label: '分析简历', path: '/resume', color: '#4F46E5' },
+  { icon: '🤖', label: 'AI 顾问', path: '/ai-chat', color: '#059669' },
+  { icon: '👤', label: '个人资料', path: '/profile', color: '#D97706' }
+])
 
 // 颜色数组
 const colors = ['#4F46E5', '#059669', '#D97706', '#DC2626', '#64748b', '#8B5CF6', '#06B6D4']
@@ -218,11 +207,40 @@ onMounted(() => {
         <v-chart class="chart" :option="trendOption" autoresize />
       </el-card>
 
-      <el-card class="chart-card chart-card-full" shadow="never">
-        <template #header>
-          <span class="card-title">课程成绩分布</span>
-        </template>
-        <v-chart class="chart" :option="gradeOption" autoresize />
+      <!-- 快捷操作 + 职业小贴士 -->
+      <el-card class="chart-card chart-card-full action-card" shadow="never">
+        <div class="action-grid">
+          <!-- 快捷操作 -->
+          <div class="quick-actions">
+            <h3 class="section-title">🚀 快捷操作</h3>
+            <div class="action-buttons">
+              <div 
+                v-for="action in quickActions" 
+                :key="action.label" 
+                class="action-btn"
+                :style="{ '--btn-color': action.color }"
+                @click="router.push(action.path)"
+              >
+                <span class="action-icon">{{ action.icon }}</span>
+                <span class="action-label">{{ action.label }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 职业小贴士 -->
+          <div class="career-tips">
+            <h3 class="section-title">💼 职业小贴士</h3>
+            <div class="tips-list">
+              <div v-for="(tip, index) in careerTips" :key="index" class="tip-item">
+                <span class="tip-icon">{{ tip.icon }}</span>
+                <div class="tip-content">
+                  <div class="tip-title">{{ tip.title }}</div>
+                  <div class="tip-desc">{{ tip.desc }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </el-card>
     </div>
   </div>
@@ -300,6 +318,108 @@ onMounted(() => {
   width: 100%;
 }
 
+/* 快捷操作 + 职业小贴士样式 */
+.action-card {
+  :deep(.el-card__body) {
+    padding: 24px;
+  }
+}
+
+.action-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 32px;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 16px 0;
+}
+
+/* 快捷操作按钮 */
+.quick-actions {
+  padding-right: 32px;
+  border-right: 1px solid #ebeef5;
+}
+
+.action-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, var(--btn-color) 0%, color-mix(in srgb, var(--btn-color) 80%, #000) 100%);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--btn-color) 30%, transparent);
+}
+
+.action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--btn-color) 40%, transparent);
+}
+
+.action-icon {
+  font-size: 24px;
+}
+
+.action-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+}
+
+/* 职业小贴士 */
+.tips-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.tip-item {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.tip-item:hover {
+  background: #f0f5ff;
+  transform: translateX(4px);
+}
+
+.tip-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.tip-content {
+  flex: 1;
+}
+
+.tip-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.tip-desc {
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
 @media (max-width: 1024px) {
   .charts-grid {
     grid-template-columns: 1fr;
@@ -307,6 +427,31 @@ onMounted(() => {
 
   .chart-card-full {
     grid-column: span 1;
+  }
+
+  .action-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .quick-actions {
+    padding-right: 0;
+    border-right: none;
+    padding-bottom: 24px;
+    border-bottom: 1px solid #ebeef5;
+  }
+
+  .action-buttons {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .action-btn {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .tips-list {
+    grid-template-columns: 1fr;
   }
 }
 </style>
