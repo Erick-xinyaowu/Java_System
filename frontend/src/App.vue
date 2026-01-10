@@ -6,85 +6,81 @@ import AppHeader from '@/components/layout/AppHeader.vue'
 
 const route = useRoute()
 
-// 需要隐藏布局的页面（登录页、首页等）
+// 需要隐藏布局的页面（登录页、Landing Page 等）
 const hideLayout = computed(() => route.meta.hideLayout === true)
 </script>
 
 <template>
-  <!-- 无布局页面（登录、首页） -->
-  <template v-if="hideLayout">
-    <router-view />
-  </template>
+  <!-- Full Screen Layout (Login, Landing) -->
+  <router-view v-if="hideLayout" />
 
-  <!-- 带侧边栏的布局页面 -->
-  <template v-else>
-    <el-container class="layout-container">
-      <AppSidebar />
-      <el-container class="layout-main-wrapper" direction="vertical">
-        <AppHeader />
-        <el-main class="layout-main">
-          <router-view />
-        </el-main>
-      </el-container>
-    </el-container>
-  </template>
+  <!-- App Layout (Dashboard style) -->
+  <div v-else class="app-layout">
+    <AppSidebar />
+    
+    <div class="main-content-wrapper">
+      <AppHeader />
+      
+      <main class="main-content">
+        <!-- Adding a transition wrapper for page transitions -->
+        <router-view v-slot="{ Component }">
+          <transition name="fade-page" mode="out-in">
+            <component :is="Component" />
+          </transition>
+        </router-view>
+        
+        <!-- Optional: Footer could go here -->
+      </main>
+    </div>
+  </div>
 </template>
 
-<style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+<style lang="scss">
+/* 
+NOTE: Global resets and base styles are imported in main.ts -> styles/main.scss 
+App.vue styles should strictly handle layout structure.
+*/
 
-html,
-body,
-#app {
-  width: 100%;
-  height: 100%;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, sans-serif;
-}
-
-/* 主布局容器 */
-.layout-container {
+.app-layout {
+  display: flex;
   width: 100%;
   height: 100vh;
+  overflow: hidden; /* Prevent body scroll, handle scroll in main-content */
+  background-color: var(--color-neutral-50);
 }
 
-/* 右侧主区域 */
-.layout-main-wrapper {
+.main-content-wrapper {
   flex: 1;
-  min-width: 0;
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  min-width: 0; /* Important for preventing flex items from overflowing */
+  position: relative;
 }
 
-/* 内容区 */
-.layout-main {
+.main-content {
   flex: 1;
-  padding: 24px !important;
   overflow-y: auto;
-  background-color: #f0f2f5;
+  overflow-x: hidden;
+  padding: var(--space-6);
+  position: relative;
+  
+  /* Scroll behavior */
+  scroll-behavior: smooth;
 }
 
-/* 滚动条样式 */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* Page Transition Effects */
+.fade-page-enter-active,
+.fade-page-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
-::-webkit-scrollbar-track {
-  background: transparent;
+.fade-page-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
 }
 
-::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+.fade-page-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
 }
 </style>

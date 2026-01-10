@@ -42,11 +42,11 @@ onMounted(async () => {
       isAdmin.value = res.data
     }
   } catch (error) {
-    // 忽略错误
+    console.error('Failed to check admin status:', error)
   }
 })
 
-const activeMenu = computed(() => route.path)
+const activePath = computed(() => route.path)
 
 function handleSelect(path: string) {
   router.push(path)
@@ -58,79 +58,187 @@ function goHome() {
 </script>
 
 <template>
-  <el-aside :width="isCollapsed ? '64px' : '220px'" class="sidebar">
-    <div class="logo" @click="goHome">
-      <el-icon :size="28" color="#4F46E5">
-        <House />
-      </el-icon>
-      <span v-show="!isCollapsed" class="logo-text">Career Planner</span>
+  <aside 
+    class="app-sidebar" 
+    :class="{ 'is-collapsed': isCollapsed }"
+  >
+    <!-- Logo -->
+    <div class="sidebar-header" @click="goHome">
+      <div class="logo-icon-wrapper">
+        <el-icon :size="20" class="logo-icon">
+          <House />
+        </el-icon>
+      </div>
+      <transition name="fade">
+        <span v-if="!isCollapsed" class="logo-text">Career Planner</span>
+      </transition>
     </div>
 
-    <el-menu
-      :default-active="activeMenu"
-      :collapse="isCollapsed"
-      :collapse-transition="false"
-      class="sidebar-menu"
-      background-color="#001529"
-      text-color="rgba(255,255,255,0.65)"
-      active-text-color="#fff"
-      @select="handleSelect"
-    >
-      <el-menu-item
-        v-for="item in menuItems"
+    <!-- Navigation -->
+    <nav class="sidebar-nav">
+      <div 
+        v-for="item in menuItems" 
         :key="item.path"
-        :index="item.path"
+        class="nav-item-wrapper"
       >
-        <el-icon><component :is="item.icon" /></el-icon>
-        <template #title>{{ item.title }}</template>
-      </el-menu-item>
-    </el-menu>
-  </el-aside>
+        <div 
+          class="nav-item" 
+          :class="{ 'is-active': activePath === item.path }"
+          @click="handleSelect(item.path)"
+        >
+          <el-icon :size="20" class="nav-icon">
+            <component :is="item.icon" />
+          </el-icon>
+          <transition name="fade">
+            <span v-if="!isCollapsed" class="nav-text">{{ item.title }}</span>
+          </transition>
+          
+          <div v-if="activePath === item.path" class="active-indicator"></div>
+        </div>
+      </div>
+    </nav>
+  </aside>
 </template>
 
-<style scoped>
-.sidebar {
-  background-color: #001529;
+<style scoped lang="scss">
+.app-sidebar {
+  width: 260px;
   height: 100vh;
-  transition: width 0.3s;
-  overflow: hidden;
+  background-color: var(--color-white);
+  border-right: 1px solid var(--color-neutral-200);
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 100;
+  flex-shrink: 0;
+
+  &.is-collapsed {
+    width: 80px;
+    
+    .nav-item {
+      justify-content: center;
+      padding: 0;
+      width: 48px;
+    }
+    
+    .logo-text, .nav-text {
+      display: none;
+    }
+    
+    .sidebar-header {
+       justify-content: center;
+       padding: 0;
+    }
+  }
 }
 
-.logo {
-  height: 64px;
+.sidebar-header {
+  height: 72px;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  cursor: pointer;
+  border-bottom: 1px solid transparent; /* Placeholder for potential border */
+}
+
+.logo-icon-wrapper {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-700));
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  cursor: pointer;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+  box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.3);
+  
+  .logo-icon {
+    color: white;
+  }
 }
 
 .logo-text {
-  font-size: 18px;
+  margin-left: 12px;
   font-weight: 700;
-  color: #fff;
+  font-size: 18px;
+  color: var(--color-neutral-900);
   white-space: nowrap;
+  letter-spacing: -0.02em;
 }
 
-.sidebar-menu {
-  border-right: none;
+.sidebar-nav {
+  flex: 1;
+  padding: 24px 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  
+  .is-collapsed & {
+    align-items: center;
+    padding: 24px 0;
+  }
 }
 
-.sidebar-menu:not(.el-menu--collapse) {
-  width: 220px;
+.nav-item {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  color: var(--color-neutral-500);
+  transition: all 0.2s ease;
+  position: relative;
+  font-weight: 500;
+  
+  &:hover {
+    background-color: var(--color-neutral-50);
+    color: var(--color-neutral-900);
+  }
+  
+  &.is-active {
+    background-color: var(--color-primary-50);
+    color: var(--color-primary-600);
+    
+    .nav-icon {
+      color: var(--color-primary-600); /* Ensure icon takes color */
+    }
+  }
+
+  .nav-icon {
+    flex-shrink: 0;
+    transition: color 0.2s;
+  }
+
+  .nav-text {
+    margin-left: 12px;
+    font-size: 14px;
+    white-space: nowrap;
+  }
 }
 
-:deep(.el-menu-item) {
-  height: 50px;
-  line-height: 50px;
+.active-indicator {
+  position: absolute;
+  right: -16px; /* Outside the item, on the edge of sidebar */
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 24px;
+  background-color: var(--color-primary-500);
+  border-radius: 4px 0 0 4px;
+  display: none; /* Hidden for now, maybe enable for a different style */
 }
 
-:deep(.el-menu-item.is-active) {
-  background-color: #4F46E5 !important;
+/* Transitions */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.15s;
 }
 
-:deep(.el-menu-item:hover) {
-  background-color: rgba(79, 70, 229, 0.5) !important;
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

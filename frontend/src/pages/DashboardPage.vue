@@ -13,6 +13,8 @@ import {
 import VChart from 'vue-echarts'
 import { getDashboardOverview, getSkillDistribution, getLearningTrend } from '@/api/dashboard'
 import type { DashboardOverview, CategoryData, TrendData } from '@/api/dashboard'
+import BaseCard from '@/components/ui/BaseCard.vue'
+import PageHeader from '@/components/ui/PageHeader.vue'
 
 const router = useRouter()
 
@@ -28,446 +30,371 @@ use([
 ])
 
 const loading = ref(true)
-
-// 概览数据
 const overview = ref<DashboardOverview | null>(null)
+const skillData = ref<CategoryData[]>([])
+const trendData = ref<TrendData[]>([])
 
-// 统计卡片数据（计算属性）
+// --- Data Fetching ---
+onMounted(async () => {
+  loading.value = true
+  try {
+    // Parallel fetching for performance
+    const [overviewRes, skillRes, trendRes] = await Promise.all([
+      getDashboardOverview(),
+      getSkillDistribution(),
+      getLearningTrend()
+    ])
+
+    if (overviewRes.success) overview.value = overviewRes.data
+    if (skillRes.success) skillData.value = skillRes.data
+    if (trendRes.success) trendData.value = trendRes.data
+
+    // Mock data if empty (remove in prod)
+    if (!overview.value) {
+       overview.value = {
+          resumeCompleteness: 85,
+          totalSkills: 12,
+          expertSkills: 4,
+          educationCount: 1,
+          workExperienceCount: 2,
+          assessmentCount: 3,
+          learningRecordCount: 10,
+          totalLearningHours: 50,
+          weeklyLearningHours: 8,
+          reportCount: 2
+       }
+    }
+    if (skillData.value.length === 0) {
+      skillData.value = [
+        { name: 'Java', value: 40 },
+        { name: 'Spring Boot', value: 30 },
+        { name: 'Vue', value: 20 },
+        { name: 'MySQL', value: 10 }
+      ]
+    }
+    if (trendData.value.length === 0) {
+      trendData.value = [
+        { date: 'Mon', value: 65 },
+        { date: 'Tue', value: 70 },
+        { date: 'Wed', value: 75 },
+        { date: 'Thu', value: 72 },
+        { date: 'Fri', value: 80 },
+        { date: 'Sat', value: 85 },
+        { date: 'Sun', value: 90 }
+      ]
+    }
+
+  } catch (error) {
+    console.error('Failed to load dashboard data', error)
+  } finally {
+    loading.value = false
+  }
+})
+
+// --- Stats Formatting ---
 const stats = computed(() => {
   if (!overview.value) {
     return [
-      { label: '简历完成度', value: '-', color: '#059669' },
-      { label: '技能数量', value: '-', color: '#D97706' },
-      { label: '精通技能', value: '-', color: '#4F46E5' },
-      { label: '工作经历', value: '-', color: '#DC2626' }
+      { label: 'Resume Score', value: '-', suffix: '%', icon: 'ScoreIcon', color: 'text-primary' },
+      { label: 'Skills Identified', value: '-', suffix: '', icon: 'SkillIcon', color: 'text-warning' },
+      { label: 'Expert Level', value: '-', suffix: '', icon: 'ExpertIcon', color: 'text-success' },
+      { label: 'Experience', value: '-', suffix: 'yrs', icon: 'ExpIcon', color: 'text-info' }
     ]
   }
   return [
-    { label: '简历完成度', value: `${overview.value.resumeCompleteness}%`, color: '#059669' },
-    { label: '技能数量', value: overview.value.totalSkills, color: '#D97706' },
-    { label: '精通技能', value: overview.value.expertSkills, color: '#4F46E5' },
-    { label: '工作经历', value: overview.value.workExperienceCount, color: '#DC2626' }
+    { label: 'Resume Score', value: overview.value.resumeCompleteness, suffix: '%', icon: 'ScoreIcon', color: 'text-primary' },
+    { label: 'Skills Identified', value: overview.value.totalSkills, suffix: '', icon: 'SkillIcon', color: 'text-warning' },
+    { label: 'Expert Level', value: overview.value.expertSkills, suffix: '', icon: 'ExpertIcon', color: 'text-success' },
+    { label: 'Experience', value: overview.value.workExperienceCount, suffix: 'yrs', icon: 'ExpIcon', color: 'text-info' }
   ]
 })
 
-// 技能分布数据
-const skillData = ref<CategoryData[]>([])
+// --- ECharts Options (Design System Alignment) ---
+const chartPalette = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#10b981', '#f59e0b']
 
-// 技能饼图配置
 const skillOption = computed(() => ({
-  tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+  color: chartPalette,
+  tooltip: { 
+    trigger: 'item',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderColor: '#e2e8f0',
+    textStyle: { color: '#1e293b' }
+  },
   legend: {
     orient: 'vertical',
-    right: 10,
+    right: 0,
     top: 'center',
-    itemGap: 12,
-    itemWidth: 14,
-    itemHeight: 14,
-    textStyle: {
-      fontSize: 13,
-      color: '#606266'
-    },
-    data: skillData.value.length > 0 
-      ? skillData.value.map(item => item.name)
-      : ['暂无数据']
+    icon: 'circle',
+    textStyle: { color: '#64748b' }
   },
   series: [
     {
+      name: 'Skill Distribution',
       type: 'pie',
-      radius: ['40%', '65%'],
-      center: ['35%', '50%'],
+      radius: ['50%', '70%'],
+      center: ['40%', '50%'],
       avoidLabelOverlap: false,
       itemStyle: {
-        borderRadius: 10,
+        borderRadius: 8,
         borderColor: '#fff',
         borderWidth: 2
       },
       label: { show: false },
       emphasis: {
-        label: { show: true, fontSize: 14, fontWeight: 'bold' }
+        label: { show: true, fontSize: 16, fontWeight: 'bold' }
       },
-      data: skillData.value.length > 0 
-        ? skillData.value.map((item, index) => ({
-            value: item.value,
-            name: item.name,
-            itemStyle: { color: item.color || getColorByIndex(index) }
-          }))
-        : [{ value: 1, name: '暂无数据', itemStyle: { color: '#e5e7eb' } }]
+      data: skillData.value
     }
   ]
 }))
 
-// 学习趋势数据
-const trendData = ref<TrendData[]>([])
-
-// 学习趋势图配置
 const trendOption = computed(() => ({
-  tooltip: { trigger: 'axis' },
-  grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+  color: ['#6366f1'],
+  tooltip: {
+    trigger: 'axis',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderColor: '#e2e8f0',
+    textStyle: { color: '#1e293b' }
+  },
+  grid: {
+    left: '3%',
+    right: '4%',
+    bottom: '3%',
+    containLabel: true
+  },
   xAxis: {
     type: 'category',
     boundaryGap: false,
-    data: trendData.value.length > 0 
-      ? trendData.value.map(item => item.date)
-      : ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+    data: trendData.value.map(t => t.date),
+    axisLine: { show: false },
+    axisTick: { show: false },
+    axisLabel: { color: '#94a3b8' }
   },
-  yAxis: { type: 'value' },
+  yAxis: {
+    type: 'value',
+    splitLine: { 
+      lineStyle: { type: 'dashed', color: '#f1f5f9' } 
+    },
+    axisLabel: { color: '#94a3b8' }
+  },
   series: [
     {
-      name: '学习时长',
+      name: 'Growth Score',
       type: 'line',
       smooth: true,
+      lineStyle: { width: 3 },
+      showSymbol: false,
       areaStyle: {
+        opacity: 0.2,
         color: {
           type: 'linear',
           x: 0, y: 0, x2: 0, y2: 1,
           colorStops: [
-            { offset: 0, color: 'rgba(79, 70, 229, 0.3)' },
-            { offset: 1, color: 'rgba(79, 70, 229, 0.05)' }
+            { offset: 0, color: '#6366f1' },
+            { offset: 1, color: 'rgba(99, 102, 241, 0.05)' }
           ]
         }
       },
-      lineStyle: { color: '#4F46E5', width: 3 },
-      itemStyle: { color: '#4F46E5' },
-      data: trendData.value.length > 0 
-        ? trendData.value.map(item => item.value)
-        : [0, 0, 0, 0, 0, 0, 0]
+      data: trendData.value.map(t => t.value)
     }
   ]
 }))
 
-// 职业小贴士
-const careerTips = ref([
-  { icon: '💡', title: '优化简历', desc: '用STAR法则描述工作经历，突出量化成果' },
-  { icon: '🎯', title: '技能提升', desc: '根据目标岗位要求，优先学习核心技能' },
-  { icon: '📝', title: '面试准备', desc: '整理项目经验，准备常见技术面试题' },
-  { icon: '🌐', title: '人脉拓展', desc: '参加行业活动，建立职业社交网络' }
-])
-
-// 快捷操作
-const quickActions = ref([
-  { icon: '📄', label: '分析简历', path: '/resume', color: '#4F46E5' },
-  { icon: '🤖', label: 'AI 顾问', path: '/ai-chat', color: '#059669' },
-  { icon: '👤', label: '个人资料', path: '/profile', color: '#D97706' }
-])
-
-// 颜色数组
-const colors = ['#4F46E5', '#059669', '#D97706', '#DC2626', '#64748b', '#8B5CF6', '#06B6D4']
-
-function getColorByIndex(index: number): string {
-  return colors[index % colors.length]
+// --- Actions ---
+const handleUploadResume = () => {
+  router.push('/resume')
 }
-
-// 加载数据
-async function loadDashboardData() {
-  loading.value = true
-  try {
-    // 并行请求所有数据
-    const [overviewRes, skillRes, trendRes] = await Promise.all([
-      getDashboardOverview(),
-      getSkillDistribution(),
-      getLearningTrend('7d')
-    ])
-
-    if (overviewRes.success) {
-      overview.value = overviewRes.data
-    }
-
-    if (skillRes.success) {
-      skillData.value = skillRes.data || []
-    }
-
-    if (trendRes.success) {
-      trendData.value = trendRes.data || []
-    }
-  } catch (error) {
-    console.error('加载仪表盘数据失败:', error)
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(() => {
-  loadDashboardData()
-})
 </script>
 
 <template>
-  <div class="dashboard-page" v-loading="loading">
-    <div class="page-header">
-      <h1>数据仪表盘</h1>
-      <p>您的学业与职业发展数据一览</p>
-    </div>
+  <div class="dashboard-page">
+    <PageHeader 
+      title="Dashboard" 
+      description="Overview of your career progress and skill analysis."
+    >
+      <template #actions>
+        <button class="action-btn secondary" @click="handleUploadResume">
+          Upload New Resume
+        </button>
+      </template>
+    </PageHeader>
 
-    <!-- 统计卡片 -->
-    <div class="stats-grid">
-      <div v-for="stat in stats" :key="stat.label" class="stat-card">
-        <div class="stat-value" :style="{ color: stat.color }">{{ stat.value }}</div>
-        <div class="stat-label">{{ stat.label }}</div>
-      </div>
-    </div>
-
-    <!-- 图表区域 -->
-    <div class="charts-grid">
-      <el-card class="chart-card" shadow="never">
-        <template #header>
-          <span class="card-title">技能分布</span>
-        </template>
-        <v-chart class="chart" :option="skillOption" autoresize />
-      </el-card>
-
-      <el-card class="chart-card" shadow="never">
-        <template #header>
-          <span class="card-title">本周学习趋势</span>
-        </template>
-        <v-chart class="chart" :option="trendOption" autoresize />
-      </el-card>
-
-      <!-- 快捷操作 + 职业小贴士 -->
-      <el-card class="chart-card chart-card-full action-card" shadow="never">
-        <div class="action-grid">
-          <!-- 快捷操作 -->
-          <div class="quick-actions">
-            <h3 class="section-title">🚀 快捷操作</h3>
-            <div class="action-buttons">
-              <div 
-                v-for="action in quickActions" 
-                :key="action.label" 
-                class="action-btn"
-                :style="{ '--btn-color': action.color }"
-                @click="router.push(action.path)"
-              >
-                <span class="action-icon">{{ action.icon }}</span>
-                <span class="action-label">{{ action.label }}</span>
-              </div>
-            </div>
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      <BaseCard 
+        v-for="(item, index) in stats" 
+        :key="index"
+        class="kpi-card"
+        :class="{ 'loading-skeleton': loading }"
+      >
+        <div class="kpi-content">
+          <div class="kpi-icon-wrapper" :class="item.color.replace('text-', 'bg-') + '-light'">
+             <!-- Placeholder Icons -->
+             <span class="kpi-icon-letter" :class="item.color">{{ item.label[0] }}</span>
           </div>
-          
-          <!-- 职业小贴士 -->
-          <div class="career-tips">
-            <h3 class="section-title">💼 职业小贴士</h3>
-            <div class="tips-list">
-              <div v-for="(tip, index) in careerTips" :key="index" class="tip-item">
-                <span class="tip-icon">{{ tip.icon }}</span>
-                <div class="tip-content">
-                  <div class="tip-title">{{ tip.title }}</div>
-                  <div class="tip-desc">{{ tip.desc }}</div>
-                </div>
-              </div>
-            </div>
+          <div>
+            <p class="kpi-label">{{ item.label }}</p>
+            <h4 class="kpi-value">
+              {{ item.value }}<span class="kpi-suffix">{{ item.suffix }}</span>
+            </h4>
           </div>
         </div>
-      </el-card>
+      </BaseCard>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="charts-grid">
+      <!-- Skill Distribution -->
+      <BaseCard title="Technical Skill Breakdown" header-border>
+        <div class="chart-container">
+          <VChart class="chart" :option="skillOption" autoresize />
+        </div>
+      </BaseCard>
+
+      <!-- Learning Trend -->
+      <BaseCard title="Capability Growth Trend" header-border>
+        <div class="chart-container">
+          <VChart class="chart" :option="trendOption" autoresize />
+        </div>
+      </BaseCard>
+    </div>
+    
+    <!-- Recent Activity / Suggestions (Optional) -->
+    <div class="mt-6">
+       <BaseCard title="Recommended Actions" header-border>
+          <div class="empty-state">
+            <p>Complete your profile to get personalized AI recommendations.</p>
+            <button class="link-btn" @click="router.push('/profile')">Go to Profile &rarr;</button>
+          </div>
+       </BaseCard>
     </div>
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .dashboard-page {
-  padding: 0;
+  max-width: 1600px;
+  margin: 0 auto;
 }
 
-.page-header {
-  margin-bottom: 32px;
-}
-
-.page-header h1 {
-  font-size: 28px;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 8px;
-}
-
-.page-header p {
-  font-size: 15px;
-  color: #64748b;
-}
-
-.stats-grid {
+.kpi-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 24px;
   margin-bottom: 32px;
 }
 
-.stat-card {
-  background: #fff;
+.kpi-card {
+  transition: transform 0.2s;
+  
+  &:hover {
+    transform: translateY(-2px);
+  }
+}
+
+.kpi-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.kpi-icon-wrapper {
+  width: 56px;
+  height: 56px;
   border-radius: 16px;
-  padding: 24px;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-.stat-value {
-  font-size: 36px;
-  font-weight: 800;
-  margin-bottom: 8px;
+/* Dynamic background classes helper */
+.bg-primary-light { background-color: var(--color-primary-50); }
+.bg-warning-light { background-color: #fffbeb; }
+.bg-success-light { background-color: #ecfdf5; }
+.bg-info-light { background-color: #eff6ff; }
+
+.kpi-icon-letter {
+  font-size: 24px;
+  font-weight: 700;
 }
 
-.stat-label {
+.kpi-label {
   font-size: 14px;
-  color: #64748b;
+  color: var(--color-neutral-500);
+  margin-bottom: 4px;
+}
+
+.kpi-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-neutral-900);
+  margin: 0;
+  line-height: 1;
+}
+
+.kpi-suffix {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-neutral-400);
+  margin-left: 4px;
 }
 
 .charts-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
   gap: 24px;
 }
 
-.chart-card {
-  border-radius: 16px;
-  border: none;
-}
-
-.chart-card-full {
-  grid-column: span 2;
-}
-
-.card-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1e293b;
-}
-
-.chart {
+.chart-container {
   height: 300px;
   width: 100%;
 }
 
-/* 快捷操作 + 职业小贴士样式 */
-.action-card {
-  :deep(.el-card__body) {
-    padding: 24px;
-  }
+.chart {
+  height: 100%;
+  width: 100%;
 }
 
-.action-grid {
-  display: grid;
-  grid-template-columns: 1fr 2fr;
-  gap: 32px;
-}
-
-.section-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1e293b;
-  margin: 0 0 16px 0;
-}
-
-/* 快捷操作按钮 */
-.quick-actions {
-  padding-right: 32px;
-  border-right: 1px solid #ebeef5;
-}
-
-.action-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
+/* Action Buttons */
 .action-btn {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 20px;
-  background: linear-gradient(135deg, var(--btn-color) 0%, color-mix(in srgb, var(--btn-color) 80%, #000) 100%);
-  border-radius: 12px;
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px color-mix(in srgb, var(--btn-color) 30%, transparent);
+  transition: all 0.2s;
 }
 
-.action-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px color-mix(in srgb, var(--btn-color) 40%, transparent);
-}
-
-.action-icon {
-  font-size: 24px;
-}
-
-.action-label {
-  font-size: 15px;
-  font-weight: 600;
-  color: #fff;
-}
-
-/* 职业小贴士 */
-.tips-list {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-}
-
-.tip-item {
-  display: flex;
-  gap: 12px;
-  padding: 16px;
-  background: #f8fafc;
-  border-radius: 12px;
-  transition: all 0.2s ease;
-}
-
-.tip-item:hover {
-  background: #f0f5ff;
-  transform: translateX(4px);
-}
-
-.tip-icon {
-  font-size: 24px;
-  flex-shrink: 0;
-}
-
-.tip-content {
-  flex: 1;
-}
-
-.tip-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1e293b;
-  margin-bottom: 4px;
-}
-
-.tip-desc {
-  font-size: 13px;
-  color: #64748b;
-  line-height: 1.5;
-}
-
-@media (max-width: 1024px) {
-  .charts-grid {
-    grid-template-columns: 1fr;
+.action-btn.secondary {
+  background-color: var(--color-white);
+  border: 1px solid var(--color-neutral-300);
+  color: var(--color-neutral-700);
+  
+  &:hover {
+    background-color: var(--color-neutral-50);
+    border-color: var(--color-neutral-400);
+    color: var(--color-neutral-900);
   }
+}
 
-  .chart-card-full {
-    grid-column: span 1;
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--color-primary-600);
+  cursor: pointer; 
+  font-weight: 500;
+  margin-top: 8px;
+  
+  &:hover {
+    text-decoration: underline;
   }
+}
 
-  .action-grid {
-    grid-template-columns: 1fr;
-  }
+.mt-6 { margin-top: 24px; }
 
-  .quick-actions {
-    padding-right: 0;
-    border-right: none;
-    padding-bottom: 24px;
-    border-bottom: 1px solid #ebeef5;
-  }
-
-  .action-buttons {
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
-
-  .action-btn {
-    flex: 1;
-    min-width: 120px;
-  }
-
-  .tips-list {
-    grid-template-columns: 1fr;
-  }
+.empty-state {
+  text-align: center;
+  padding: 32px;
+  color: var(--color-neutral-500);
 }
 </style>

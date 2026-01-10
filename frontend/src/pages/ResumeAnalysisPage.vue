@@ -1,139 +1,102 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
-import { Upload, Delete, Document, Plus, ArrowLeft, Download } from '@element-plus/icons-vue'
+import { Upload, Document, RefreshRight, Delete, Download } from '@element-plus/icons-vue'
 import MarkdownIt from 'markdown-it'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
-import {
-  getResumeVersions,
-  getResumeVersionDetail,
-  deleteResumeVersion,
-  uploadAndParseResume,
-  saveParseResult
-} from '@/api/version'
-import type { ResumeVersionVO, ResumeVersionDetailVO, ParseResultVO } from '@/api/version'
+import { getResumeVersions, getResumeVersionDetail, deleteResumeVersion, uploadAndParseResume } from '@/api/version'
+import type { ResumeVersionVO, ResumeVersionDetailVO } from '@/api/version'
+import PageHeader from '@/components/ui/PageHeader.vue'
+import BaseCard from '@/components/ui/BaseCard.vue'
 
-// Markdown 渲染器
-const md = new MarkdownIt({
-  html: true,
-  breaks: true,
-  linkify: true,
-})
+// --- Setup ---
+const md = new MarkdownIt({ html: true, breaks: true, linkify: true })
 
-// 页面状态
 const loading = ref(false)
 const uploading = ref(false)
-
-// 版本列表
 const versions = ref<ResumeVersionVO[]>([])
-
-// 当前选中的版本
 const selectedVersionId = ref<number | null>(null)
 const selectedVersion = ref<ResumeVersionDetailVO | null>(null)
 
-// 上传对话框
-const uploadDialogVisible = ref(false)
-const versionNote = ref('')
-const fileList = ref<any[]>([])
-
-// 解析结果（上传后保存）
-const parseResult = ref<ParseResultVO | null>(null)
-const showSaveConfirm = ref(false)
-
-// 计算属性：渲染后的分析报告
+// --- Computeds ---
 const renderedReport = computed(() => {
+  // Use hasReport as a dependency tracker
+  void hasReport.value
   if (!selectedVersion.value?.analysisReport) {
-    return '<div class="no-report">暂无分析报告</div>'
+    return `<div class="empty-report">
+      <div class="empty-icon">📝</div>
+      <p>选择一个简历版本查看 AI 分析报告</p>
+    </div>`
   }
   return md.render(selectedVersion.value.analysisReport)
 })
 
-// 计算属性：格式化文件大小
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return bytes + ' B'
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
-  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+const hasReport = computed(() => !!selectedVersion.value?.analysisReport)
+
+// 格式化版本名称（优先显示文件名，否则显示日期时间）
+function formatVersionName(v: ResumeVersionVO): string {
+  // 如果有版本备注，使用备注
+  if (v.versionNote && v.versionNote.trim()) {
+    return v.versionNote
+  }
+  // 否则根据上传时间生成名称
+  if (v.uploadTime) {
+    return `简历 - ${v.uploadTime}`
+  }
+  // 最后兜底
+  return `简历 #${v.id}`
 }
 
-// 计算属性：格式化日期
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
-
-// 加载版本列表
+// --- Methods ---
 async function loadVersions() {
   loading.value = true
   try {
-    const res = await getResumeVersions()
-    if (res.success || res.code === 200) {
+    const res = await getResumeVersions() as any
+    if (res.code === 200 || res.success) {
       versions.value = res.data || []
-      // 默认选中最新版本
       if (versions.value.length > 0 && !selectedVersionId.value) {
         selectVersion(versions.value[0].id)
       }
     }
   } catch (error) {
-    console.error('加载版本列表失败:', error)
-    ElMessage.error('加载版本列表失败')
+    ElMessage.error('加载历史版本失败')
   } finally {
     loading.value = false
   }
 }
 
-// 选择版本
 async function selectVersion(id: number) {
   selectedVersionId.value = id
   loading.value = true
   try {
-    const res = await getResumeVersionDetail(id)
-    if (res.success || res.code === 200) {
+    const res = await getResumeVersionDetail(id) as any
+    if (res.code === 200 || res.success) {
       selectedVersion.value = res.data
     }
   } catch (error) {
-    console.error('加载版本详情失败:', error)
-    ElMessage.error('加载版本详情失败')
+    console.error(error)
   } finally {
     loading.value = false
   }
 }
 
-// 打开上传对话框
-function openUploadDialog() {
-  uploadDialogVisible.value = true
-  versionNote.value = ''
-  fileList.value = []
-}
-
-// 文件变化
-function handleFileChange(file: any) {
-  // 只保留最后一个文件
-  fileList.value = [file]
-}
-
-// 移除文件
-function handleFileRemove() {
-  fileList.value = []
-}
-
-// 上传简历
-async function handleUpload() {
-  if (fileList.value.length === 0) {
-    ElMessage.warning('请选择要上传的简历文件')
-    return
+async function handleFileUpload(file: any) {
+  const fileName = file.name.toLowerCase()
+  const fileType = file.raw.type
+  
+  // 支持 PDF 和 TXT 文件
+  const isPDF = fileType === 'application/pdf' || fileName.endsWith('.pdf')
+  const isTXT = fileType === 'text/plain' || fileName.endsWith('.txt')
+  
+  if (!isPDF && !isTXT) {
+     ElMessage.error('仅支持 PDF 和 TXT 格式的文件')
+     return false
   }
   
   uploading.value = true
-  uploadDialogVisible.value = false
   
-  // 显示全屏加载，因为AI分析可能需要30-60秒
+  // 显示全屏加载，因为AI分析可能需要较长时间
   const loadingInstance = ElLoading.service({
     lock: true,
     text: '正在解析简历并生成智能分析报告，请稍候...',
@@ -141,99 +104,47 @@ async function handleUpload() {
   })
   
   try {
-    const file = fileList.value[0].raw
-    const res = await uploadAndParseResume(file, versionNote.value || undefined)
-    
-    if (res.success || res.code === 200) {
-      ElMessage.success('简历解析成功！分析报告已生成')
-      parseResult.value = res.data
-      
-      // 刷新版本列表
+    const res = await uploadAndParseResume(file.raw, file.name) as any
+    if (res.code === 200 || res.success) {
+      ElMessage.success('简历上传并分析成功！')
       await loadVersions()
       
       // 如果返回了版本ID，选中该版本
       if (res.data?.versionId) {
         await selectVersion(res.data.versionId)
+      } else if (versions.value.length > 0) {
+        await selectVersion(versions.value[0].id)
       }
-      
-      // 询问是否保存到简历
-      showSaveConfirm.value = true
-    } else {
-      ElMessage.error(res.message || '上传失败')
     }
-  } catch (error: any) {
-    console.error('上传失败:', error)
-    ElMessage.error(error.message || '上传失败，请重试')
+  } catch (error) {
+    ElMessage.error('上传失败，请重试')
   } finally {
     loadingInstance.close()
     uploading.value = false
-    fileList.value = []
-    versionNote.value = ''
   }
 }
 
-// 保存解析结果到简历
-async function confirmSaveParseResult() {
-  if (!parseResult.value) return
-  
-  try {
-    const res = await saveParseResult(parseResult.value)
-    if (res.success || res.code === 200) {
-      ElMessage.success('简历信息已更新')
+function confirmDelete(id: number) {
+  ElMessageBox.confirm('确定要删除这个版本吗？此操作不可恢复。', '确认删除', {
+    confirmButtonText: '删除',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(async () => {
+    await deleteResumeVersion(id)
+    ElMessage.success('删除成功')
+    if (selectedVersionId.value === id) {
+       selectedVersion.value = null
+       selectedVersionId.value = null
     }
-  } catch (error) {
-    console.error('保存失败:', error)
-    ElMessage.error('保存失败')
-  } finally {
-    showSaveConfirm.value = false
-    parseResult.value = null
-  }
+    loadVersions()
+  })
 }
 
-// 取消保存
-function cancelSaveParseResult() {
-  showSaveConfirm.value = false
-  parseResult.value = null
-}
-
-// 删除版本
-async function handleDeleteVersion(id: number, event: Event) {
-  event.stopPropagation()
-  
-  try {
-    await ElMessageBox.confirm('确定要删除这个版本吗？此操作不可恢复。', '确认删除', {
-      confirmButtonText: '删除',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
-    
-    const res = await deleteResumeVersion(id)
-    if (res.success || res.code === 200) {
-      ElMessage.success('删除成功')
-      
-      // 如果删除的是当前选中的版本，清空选中
-      if (selectedVersionId.value === id) {
-        selectedVersionId.value = null
-        selectedVersion.value = null
-      }
-      
-      // 刷新列表
-      await loadVersions()
-    }
-  } catch (error: any) {
-    if (error !== 'cancel') {
-      console.error('删除失败:', error)
-      ElMessage.error('删除失败')
-    }
-  }
-}
-
-// 导出PDF状态
+// PDF导出功能
 const exporting = ref(false)
 
-// 导出PDF功能
 async function exportPDF() {
-  if (!selectedVersion.value?.hasAnalysis) {
+  if (!selectedVersion.value?.analysisReport) {
     ElMessage.warning('当前版本暂无分析报告，无法导出')
     return
   }
@@ -246,12 +157,10 @@ async function exportPDF() {
   })
 
   try {
-    // 等待DOM更新
     await nextTick()
 
     // 获取要导出的内容区域
-    const reportElement = document.querySelector('.report-body') as HTMLElement
-    const infoElement = document.querySelector('.report-info') as HTMLElement
+    const reportElement = document.querySelector('.markdown-body') as HTMLElement
     
     if (!reportElement) {
       throw new Error('未找到报告内容')
@@ -280,28 +189,20 @@ async function exportPDF() {
     tempContainer.appendChild(title)
 
     // 添加基本信息
-    if (infoElement) {
-      const infoClone = document.createElement('div')
-      infoClone.innerHTML = `
-        <div style="margin-bottom: 24px; padding: 16px; background: #f5f7fa; border-radius: 8px;">
-          <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-            <tr>
-              <td style="padding: 8px; color: #909399; width: 80px;">候选人</td>
-              <td style="padding: 8px; color: #303133;">${selectedVersion.value?.candidateName || '未知'}</td>
-              <td style="padding: 8px; color: #909399; width: 80px;">版本</td>
-              <td style="padding: 8px; color: #303133;">版本 ${selectedVersion.value?.versionNumber}</td>
-            </tr>
-            <tr>
-              <td style="padding: 8px; color: #909399;">文件名</td>
-              <td style="padding: 8px; color: #303133;">${selectedVersion.value?.fileName}</td>
-              <td style="padding: 8px; color: #909399;">导出时间</td>
-              <td style="padding: 8px; color: #303133;">${new Date().toLocaleString('zh-CN')}</td>
-            </tr>
-          </table>
-        </div>
-      `
-      tempContainer.appendChild(infoClone)
-    }
+    const infoClone = document.createElement('div')
+    infoClone.innerHTML = `
+      <div style="margin-bottom: 24px; padding: 16px; background: #f5f7fa; border-radius: 8px;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+          <tr>
+            <td style="padding: 8px; color: #909399; width: 80px;">文件名</td>
+            <td style="padding: 8px; color: #303133;">${selectedVersion.value?.versionNote || '简历'}</td>
+            <td style="padding: 8px; color: #909399; width: 80px;">导出时间</td>
+            <td style="padding: 8px; color: #303133;">${new Date().toLocaleString('zh-CN')}</td>
+          </tr>
+        </table>
+      </div>
+    `
+    tempContainer.appendChild(infoClone)
 
     // 克隆报告内容
     const reportClone = reportElement.cloneNode(true) as HTMLElement
@@ -328,14 +229,13 @@ async function exportPDF() {
 
     // 使用 html2canvas 生成图像
     const canvas = await html2canvas(tempContainer, {
-      scale: 2, // 提高清晰度
+      scale: 2,
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#ffffff',
       logging: false
     })
 
-    // 移除临时容器
     document.body.removeChild(tempContainer)
 
     // 创建 PDF
@@ -357,7 +257,7 @@ async function exportPDF() {
     pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight)
     heightLeft -= pageHeight
 
-    // 如果内容超过一页，添加更多页
+    // 添加更多页
     while (heightLeft > 0) {
       position = heightLeft - imgHeight
       pdf.addPage()
@@ -365,13 +265,11 @@ async function exportPDF() {
       heightLeft -= pageHeight
     }
 
-    // 生成文件名
-    const fileName = `简历分析报告_${selectedVersion.value?.candidateName || '未知'}_v${selectedVersion.value?.versionNumber}_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.pdf`
-    
     // 下载 PDF
+    const fileName = `简历分析报告_${selectedVersion.value?.versionNote || '未命名'}_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.pdf`
     pdf.save(fileName)
     
-    ElMessage.success('PDF导出成功！')
+    ElMessage.success('PDF导出成功')
   } catch (error) {
     console.error('PDF导出失败:', error)
     ElMessage.error('PDF导出失败，请重试')
@@ -381,460 +279,405 @@ async function exportPDF() {
   }
 }
 
-// 页面加载时获取版本列表
 onMounted(() => {
   loadVersions()
 })
 </script>
 
 <template>
-  <div class="resume-analysis-page">
-    <!-- 左侧版本列表 -->
-    <aside class="version-sidebar">
-      <div class="sidebar-header">
-        <h2>📄 简历版本</h2>
-        <el-button type="primary" :icon="Plus" circle size="small" @click="openUploadDialog" />
-      </div>
-      
-      <div class="version-list" v-loading="loading && versions.length === 0">
-        <div v-if="versions.length === 0 && !loading" class="empty-tip">
-          <el-empty description="暂无简历版本" :image-size="80">
-            <el-button type="primary" @click="openUploadDialog">
-              <el-icon><Upload /></el-icon>
-              上传简历
-            </el-button>
-          </el-empty>
-        </div>
-        
-        <div
-          v-for="version in versions"
-          :key="version.id"
-          class="version-item"
-          :class="{ active: selectedVersionId === version.id }"
-          @click="selectVersion(version.id)"
-        >
-          <div class="version-info">
-            <div class="version-number">
-              <el-icon><Document /></el-icon>
-              版本 {{ version.versionNumber }}
-            </div>
-            <div class="version-name">{{ version.fileName }}</div>
-            <div class="version-meta">
-              <span>{{ formatFileSize(version.fileSize) }}</span>
-              <span>{{ formatDate(version.uploadTime) }}</span>
-            </div>
-            <div v-if="version.versionNote" class="version-note">
-              {{ version.versionNote }}
-            </div>
-          </div>
-          <div class="version-actions">
-            <el-tag v-if="version.hasAnalysis" type="success" size="small">已分析</el-tag>
-            <el-tag v-else type="info" size="small">无报告</el-tag>
-            <el-button
-              type="danger"
-              :icon="Delete"
-              circle
-              size="small"
-              @click="handleDeleteVersion(version.id, $event)"
-            />
-          </div>
-        </div>
-      </div>
-    </aside>
-
-    <!-- 右侧分析报告 -->
-    <main class="report-main">
-      <div class="report-header">
-        <h1>🧾 智能简历分析</h1>
-        <div class="header-actions">
-          <el-button type="primary" @click="openUploadDialog">
-            <el-icon><Upload /></el-icon>
-            分析新简历
-          </el-button>
-          <el-button 
-            @click="exportPDF" 
-            :disabled="!selectedVersion?.hasAnalysis"
-            :loading="exporting"
-          >
-            <el-icon v-if="!exporting"><Download /></el-icon>
-            {{ exporting ? '导出中...' : '导出PDF' }}
-          </el-button>
-        </div>
-      </div>
-
-      <div class="report-content" v-loading="loading && selectedVersionId !== null">
-        <template v-if="selectedVersion">
-          <div class="report-info">
-            <el-descriptions :column="3" border size="small">
-              <el-descriptions-item label="候选人">
-                {{ selectedVersion.candidateName || '未知' }}
-              </el-descriptions-item>
-              <el-descriptions-item label="版本">
-                版本 {{ selectedVersion.versionNumber }}
-              </el-descriptions-item>
-              <el-descriptions-item label="上传时间">
-                {{ formatDate(selectedVersion.uploadTime) }}
-              </el-descriptions-item>
-              <el-descriptions-item label="文件名">
-                {{ selectedVersion.fileName }}
-              </el-descriptions-item>
-              <el-descriptions-item label="文件大小">
-                {{ formatFileSize(selectedVersion.fileSize) }}
-              </el-descriptions-item>
-              <el-descriptions-item label="备注">
-                {{ selectedVersion.versionNote || '无' }}
-              </el-descriptions-item>
-            </el-descriptions>
-          </div>
-
-          <div class="report-body markdown-body" v-html="renderedReport"></div>
-        </template>
-        
-        <template v-else>
-          <div class="no-selection">
-            <el-empty description="请选择一个简历版本查看分析报告">
-              <el-button v-if="versions.length === 0" type="primary" @click="openUploadDialog">
-                <el-icon><Upload /></el-icon>
-                上传第一份简历
-              </el-button>
-            </el-empty>
-          </div>
-        </template>
-      </div>
-    </main>
-
-    <!-- 上传对话框 -->
-    <el-dialog
-      v-model="uploadDialogVisible"
-      title="上传简历"
-      width="500px"
-      :close-on-click-modal="false"
+  <div class="resume-workspace">
+    <PageHeader 
+      title="简历分析" 
+      description="智能解析简历，AI驱动的深度分析报告"
     >
-      <el-form label-width="80px">
-        <el-form-item label="选择文件">
-          <el-upload
-            class="upload-area"
-            drag
+      <template #actions>
+         <el-upload
+            class="header-upload"
+            :show-file-list="false"
             :auto-upload="false"
-            :limit="1"
-            :on-change="handleFileChange"
-            :on-remove="handleFileRemove"
-            :file-list="fileList"
-            accept=".pdf,.doc,.docx,.txt"
-          >
-            <el-icon class="el-icon--upload"><Upload /></el-icon>
-            <div class="el-upload__text">
-              将文件拖到此处，或<em>点击上传</em>
-            </div>
-            <template #tip>
-              <div class="el-upload__tip">
-                支持 PDF、Word、TXT 格式，文件大小不超过 10MB
-              </div>
-            </template>
-          </el-upload>
-        </el-form-item>
-        <el-form-item label="版本备注">
-          <el-input
-            v-model="versionNote"
-            type="textarea"
-            :rows="2"
-            placeholder="可选：添加版本说明"
-          />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="uploadDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="uploading" @click="handleUpload">
-          {{ uploading ? '解析中...' : '上传并分析' }}
-        </el-button>
+            :on-change="handleFileUpload"
+            accept=".pdf,.txt"
+            :disabled="uploading"
+         >
+            <button class="primary-action-btn" :disabled="uploading">
+               <el-icon v-if="uploading" class="is-loading"><RefreshRight /></el-icon>
+               <el-icon v-else><Upload /></el-icon>
+               <span>{{ uploading ? '分析中...' : '上传简历' }}</span>
+            </button>
+         </el-upload>
       </template>
-    </el-dialog>
+    </PageHeader>
 
-    <!-- 保存确认对话框 -->
-    <el-dialog
-      v-model="showSaveConfirm"
-      title="更新简历信息"
-      width="400px"
-    >
-      <p>简历解析成功！是否将解析的信息更新到您的简历中？</p>
-      <p class="confirm-tip">这将更新您的姓名、目标职位、个人简介等基本信息。</p>
-      <template #footer>
-        <el-button @click="cancelSaveParseResult">暂不更新</el-button>
-        <el-button type="primary" @click="confirmSaveParseResult">更新简历</el-button>
-      </template>
-    </el-dialog>
+    <div class="workspace-layout">
+      <!-- Left Panel: Version History -->
+      <aside class="history-panel">
+        <div class="panel-header">
+           <h3>历史版本</h3>
+        </div>
+        <div class="version-list-wrapper">
+           <ul v-if="versions.length" class="version-list">
+             <li 
+               v-for="v in versions" 
+               :key="v.id"
+               class="version-item"
+               :class="{ 'is-active': selectedVersionId === v.id }"
+               @click="selectVersion(v.id)"
+             >
+               <div class="version-icon">
+                 <el-icon><Document /></el-icon>
+               </div>
+               <div class="version-info">
+                 <span class="version-note">{{ formatVersionName(v) }}</span>
+                 <span class="version-date">{{ v.uploadTime }}</span>
+               </div>
+               <button class="delete-btn" @click.stop="confirmDelete(v.id)">
+                 <el-icon><Delete /></el-icon>
+               </button>
+             </li>
+           </ul>
+           <div v-else class="empty-history">
+              暂无历史记录
+           </div>
+        </div>
+      </aside>
+
+      <!-- Main Panel: Analysis Result (Workspace) -->
+      <main class="analysis-panel">
+         <BaseCard class="result-card" no-padding>
+            <div class="result-header">
+               <div class="result-title-area">
+                  <h3>AI 分析报告</h3>
+                  <span v-if="selectedVersion" class="file-tag">
+                     {{ selectedVersion.versionNote }}
+                  </span>
+               </div>
+               <!-- Export PDF Button -->
+               <button 
+                  v-if="hasReport" 
+                  class="export-btn" 
+                  @click="exportPDF"
+                  :disabled="exporting"
+               >
+                  <el-icon v-if="exporting" class="is-loading"><RefreshRight /></el-icon>
+                  <el-icon v-else><Download /></el-icon>
+                  <span>{{ exporting ? '导出中...' : '导出PDF' }}</span>
+               </button>
+            </div>
+            
+            <div class="result-content-area">
+               <div v-if="loading" class="loading-state">
+                  <div class="spinner"></div>
+                  <p>正在加载分析报告...</p>
+               </div>
+               
+               <div 
+                  v-else 
+                  class="markdown-body custom-markdown" 
+                  v-html="renderedReport"
+               ></div>
+            </div>
+         </BaseCard>
+      </main>
+    </div>
   </div>
 </template>
 
-<style scoped>
-.resume-analysis-page {
-  display: flex;
-  height: calc(100vh - 60px);
-  background: #f5f7fa;
-}
-
-/* 左侧版本列表 */
-.version-sidebar {
-  width: 320px;
-  background: #fff;
-  border-right: 1px solid #ebeef5;
+<style scoped lang="scss">
+.resume-workspace {
+  height: calc(100vh - 100px); /* Fill remaining height roughly */
   display: flex;
   flex-direction: column;
+  overflow: hidden; /* Prevent workspace from growing */
 }
 
-.sidebar-header {
+.workspace-layout {
+  flex: 1;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  border-bottom: 1px solid #ebeef5;
+  gap: 24px;
+  min-height: 0; /* Important for nested scroll */
+  overflow: hidden; /* Contain children */
 }
 
-.sidebar-header h2 {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: #303133;
+/* --- History Panel --- */
+.history-panel {
+  width: 300px;
+  background-color: var(--color-white);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-neutral-200);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+
+  @media (max-width: 1024px) {
+     display: none; /* In real app, user drawer for mobile */
+  }
+}
+
+.panel-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-neutral-100);
+  
+  h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-neutral-900);
+  }
+}
+
+.version-list-wrapper {
+  flex: 1;
+  overflow-y: auto;
 }
 
 .version-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px;
-}
-
-.empty-tip {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
+  list-style: none;
+  padding: 0;
+  margin: 0;
 }
 
 .version-item {
-  padding: 12px 16px;
-  margin-bottom: 8px;
-  background: #f9fafc;
-  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
   cursor: pointer;
-  transition: all 0.2s;
-  border: 2px solid transparent;
+  transition: background-color 0.2s;
+  border-bottom: 1px solid transparent;
+  
+  &:hover {
+    background-color: var(--color-neutral-50);
+    
+    .delete-btn {
+      opacity: 1;
+    }
+  }
+  
+  &.is-active {
+    background-color: var(--color-primary-50);
+    border-right: 3px solid var(--color-primary-500);
+    
+    .version-note {
+      color: var(--color-primary-700);
+      font-weight: 500;
+    }
+    
+    .version-icon {
+      color: var(--color-primary-500);
+    }
+  }
 }
 
-.version-item:hover {
-  background: #f0f5ff;
-  border-color: #d4e3fc;
-}
-
-.version-item.active {
-  background: #ecf5ff;
-  border-color: #409eff;
+.version-icon {
+  margin-right: 12px;
+  color: var(--color-neutral-400);
+  display: flex;
+  align-items: center;
 }
 
 .version-info {
-  margin-bottom: 8px;
-}
-
-.version-number {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 600;
-  color: #303133;
-  margin-bottom: 4px;
-}
-
-.version-name {
-  font-size: 13px;
-  color: #606266;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-bottom: 4px;
-}
-
-.version-meta {
-  display: flex;
-  gap: 12px;
-  font-size: 12px;
-  color: #909399;
-}
-
-.version-note {
-  margin-top: 6px;
-  font-size: 12px;
-  color: #909399;
-  padding: 4px 8px;
-  background: #fff;
-  border-radius: 4px;
-}
-
-.version-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-/* 右侧报告区域 */
-.report-main {
   flex: 1;
   display: flex;
   flex-direction: column;
+  gap: 2px;
   overflow: hidden;
 }
 
-.report-header {
+.version-note {
+  font-size: 0.9rem;
+  color: var(--color-neutral-800);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.version-date {
+  font-size: 0.75rem;
+  color: var(--color-neutral-400);
+}
+
+.delete-btn {
+  background: none;
+  border: none;
+  color: var(--color-neutral-400);
+  cursor: pointer;
+  padding: 4px;
+  opacity: 0; /* Hidden by default */
+  transition: all 0.2s;
+  
+  &:hover {
+    color: var(--color-error);
+    background-color: #fee2e2;
+    border-radius: 4px;
+  }
+}
+
+.empty-history {
+  padding: 24px;
+  text-align: center;
+  color: var(--color-neutral-400);
+  font-size: 0.9rem;
+}
+
+/* --- Analysis Panel --- */
+.analysis-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0; /* Critical for nested flex scroll */
+  overflow: hidden;
+}
+
+.result-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* Allow shrinking */
+  overflow: hidden;
+  
+  /* Override BaseCard's card-body to be flex container */
+  :deep(.card-body) {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+}
+
+.result-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--color-neutral-200);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 24px;
-  background: #fff;
-  border-bottom: 1px solid #ebeef5;
+  background-color: var(--color-neutral-50);
 }
 
-.report-header h1 {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 600;
-  color: #303133;
-}
-
-.header-actions {
+.result-title-area {
   display: flex;
+  align-items: center;
   gap: 12px;
+  
+  h3 {
+    font-size: 1rem;
+    font-weight: 600;
+  }
 }
 
-.report-content {
+.file-tag {
+  background-color: var(--color-white);
+  border: 1px solid var(--color-neutral-200);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: var(--color-neutral-500);
+}
+
+.export-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background-color: var(--color-white);
+  border: 1px solid var(--color-neutral-300);
+  border-radius: var(--radius-md);
+  color: var(--color-neutral-700);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  &:hover:not(:disabled) {
+    border-color: var(--color-primary-500);
+    color: var(--color-primary-600);
+    background-color: var(--color-primary-50);
+  }
+  
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  
+  .is-loading {
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.result-content-area {
   flex: 1;
   overflow-y: auto;
-  padding: 24px;
-}
-
-.report-info {
-  margin-bottom: 20px;
-}
-
-.report-body {
-  background: #fff;
+  overflow-x: hidden;
   padding: 32px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  background-color: var(--color-white);
+  min-height: 0; /* Critical: allow flex item to shrink and scroll */
 }
 
-.no-report {
-  text-align: center;
-  padding: 60px;
-  color: #909399;
-  font-size: 16px;
+/* Loading & Empty States */
+.loading-state, 
+:deep(.empty-report) {
+   height: 100%;
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   justify-content: center;
+   color: var(--color-neutral-400);
+   gap: 16px;
 }
 
-.no-selection {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
+.spinner {
+   width: 40px;
+   height: 40px;
+   border: 3px solid var(--color-neutral-200);
+   border-top-color: var(--color-primary-500);
+   border-radius: 50%;
+   animation: spin 1s linear infinite;
 }
 
-/* Markdown 样式 */
+@keyframes spin {
+   to { transform: rotate(360deg); }
+}
+
+:deep(.empty-icon) {
+   font-size: 48px;
+   opacity: 0.5;
+}
+
+/* Markdown Styles (Minimal Reset) */
 .markdown-body {
-  font-size: 15px;
-  line-height: 1.8;
-  color: #303133;
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--color-neutral-800);
+  max-width: 800px;
+  margin: 0 auto;
 }
 
-.markdown-body :deep(h1) {
-  font-size: 28px;
+/* Primary Action Button */
+.primary-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--color-primary-600);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
   font-weight: 600;
-  margin-bottom: 24px;
-  padding-bottom: 12px;
-  border-bottom: 2px solid #409eff;
-  color: #303133;
-}
-
-.markdown-body :deep(h2) {
-  font-size: 20px;
-  font-weight: 600;
-  margin-top: 32px;
-  margin-bottom: 16px;
-  color: #409eff;
-}
-
-.markdown-body :deep(h3) {
-  font-size: 17px;
-  font-weight: 600;
-  margin-top: 24px;
-  margin-bottom: 12px;
-  color: #606266;
-}
-
-.markdown-body :deep(p) {
-  margin-bottom: 12px;
-}
-
-.markdown-body :deep(ul),
-.markdown-body :deep(ol) {
-  margin-bottom: 16px;
-  padding-left: 24px;
-}
-
-.markdown-body :deep(li) {
-  margin-bottom: 8px;
-}
-
-.markdown-body :deep(table) {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 16px 0;
-}
-
-.markdown-body :deep(th),
-.markdown-body :deep(td) {
-  padding: 10px 14px;
-  border: 1px solid #ebeef5;
-  text-align: left;
-}
-
-.markdown-body :deep(th) {
-  background: #f5f7fa;
-  font-weight: 600;
-}
-
-.markdown-body :deep(tr:hover td) {
-  background: #f9fafc;
-}
-
-.markdown-body :deep(strong) {
-  font-weight: 600;
-  color: #303133;
-}
-
-.markdown-body :deep(code) {
-  background: #f5f7fa;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-family: 'Menlo', 'Monaco', monospace;
-  font-size: 13px;
-}
-
-.markdown-body :deep(blockquote) {
-  margin: 16px 0;
-  padding: 12px 20px;
-  background: #f5f7fa;
-  border-left: 4px solid #409eff;
-  color: #606266;
-}
-
-/* 上传区域样式 */
-.upload-area {
-  width: 100%;
-}
-
-.upload-area :deep(.el-upload-dragger) {
-  width: 100%;
-}
-
-.confirm-tip {
-  color: #909399;
-  font-size: 13px;
-  margin-top: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  
+  &:hover {
+    background-color: var(--color-primary-700);
+  }
+  
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
 }
 </style>

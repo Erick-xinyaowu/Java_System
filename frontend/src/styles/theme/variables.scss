@@ -1,0 +1,114 @@
+:root {
+  /* --- Color Palette: Modern Indigo & Slate Theme --- */
+  
+  /* Primary Colors - Used for actions, links, active states */
+  --color-primary-50: #eef2ff;
+  --color-primary-100: #e0e7ff;
+  --color-primary-200: #c7d2fe;
+  --color-primary-300: #a5b4fc;
+  --color-primary-400: #818cf8;
+  --color-primary-500: #6366f1; /* Main Brand Color */
+  --color-primary-600: #4f46e5;
+  --color-primary-700: #4338ca;
+  --color-primary-800: #3730a3;
+  --color-primary-900: #312e81;
+
+  /* Neutral Colors (Slate) - Used for background, text, borders */
+  --color-neutral-50: #f8fafc; /* App Background */
+  --color-neutral-100: #f1f5f9;
+  --color-neutral-200: #e2e8f0; /* Borders, Dividers */
+  --color-neutral-300: #cbd5e1;
+  --color-neutral-400: #94a3b8; /* Placeholder, Disabled text */
+  --color-neutral-500: #64748b; /* Secondary Text */
+  --color-neutral-600: #475569;
+  --color-neutral-700: #334155;
+  --color-neutral-800: #1e293b; /* Primary Text */
+  --color-neutral-900: #0f172a; /* Headings */
+  --color-white: #ffffff;
+
+  /* Semantic Colors */
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+
+  /* --- Typography --- */
+  --font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-family-mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+  
+  --font-size-xs: 0.75rem;   /* 12px */
+  --font-size-sm: 0.875rem;  /* 14px */
+  --font-size-base: 1rem;    /* 16px */
+  --font-size-lg: 1.125rem;  /* 18px */
+  --font-size-xl: 1.25rem;   /* 20px */
+  --font-size-2xl: 1.5rem;   /* 24px */
+  --font-size-3xl: 1.875rem; /* 30px */
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* --- Spacing System (Base 4px) --- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* --- Borders & Radius --- */
+  --radius-sm: 6px;
+  --radius-md: 8px;   /* Default for inputs, buttons */
+  --radius-lg: 12px;  /* Default for cards */
+  --radius-xl: 16px;  /* Modals, large containers */
+  --radius-full: 9999px;
+
+  /* --- Shadows (Soft, Diffused) --- */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-focus: 0 0 0 3px rgba(99, 102, 241, 0.2); /* Focus ring */
+
+  /* --- Transitions --- */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
+
+  /* --- Element Plus Overrides (Mapping to our system) --- */
+  --el-color-primary: var(--color-primary-500);
+  --el-color-primary-light-3: var(--color-primary-400);
+  --el-color-primary-light-5: var(--color-primary-300);
+  --el-color-primary-light-7: var(--color-primary-200);
+  --el-color-primary-light-8: var(--color-primary-100);
+  --el-color-primary-light-9: var(--color-primary-50);
+  --el-color-primary-dark-2: var(--color-primary-700);
+
+  --el-text-color-primary: var(--color-neutral-800);
+  --el-text-color-regular: var(--color-neutral-600);
+  --el-text-color-secondary: var(--color-neutral-500);
+  --el-text-color-placeholder: var(--color-neutral-400);
+
+  --el-border-color: var(--color-neutral-200);
+  --el-border-color-light: var(--color-neutral-100);
+  --el-bg-color: var(--color-white);
+  --el-bg-color-page: var(--color-neutral-50);
+  
+  --el-border-radius-base: var(--radius-md);
+  --el-border-radius-small: var(--radius-sm);
+}
+
+/* Helper Classes */
+.text-primary { color: var(--color-primary-500); }
+.text-neutral-500 { color: var(--color-neutral-500); }
+.text-neutral-800 { color: var(--color-neutral-800); }
+
+.bg-page { background-color: var(--color-neutral-50); }
+.bg-white { background-color: var(--color-white); }
+
+.rounded-lg { border-radius: var(--radius-lg); }
+.shadow-md { box-shadow: var(--shadow-md); }
