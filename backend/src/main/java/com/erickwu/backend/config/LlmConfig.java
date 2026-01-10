@@ -1,6 +1,7 @@
 package com.erickwu.backend.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 /**
@@ -8,6 +9,7 @@ import org.springframework.context.annotation.Configuration;
  * 用于配置通义千问等大模型 API
  */
 @Configuration
+@EnableConfigurationProperties(LlmConfig.class)
 @ConfigurationProperties(prefix = "llm")
 public class LlmConfig {
 

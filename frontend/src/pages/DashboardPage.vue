@@ -14,7 +14,6 @@ import VChart from 'vue-echarts'
 import { getDashboardOverview, getSkillDistribution, getLearningTrend } from '@/api/dashboard'
 import type { DashboardOverview, CategoryData, TrendData } from '@/api/dashboard'
 import BaseCard from '@/components/ui/BaseCard.vue'
-import PageHeader from '@/components/ui/PageHeader.vue'
 
 const router = useRouter()
 
