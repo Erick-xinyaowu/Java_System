@@ -207,7 +207,7 @@ import {
   LegendComponent,
   GridComponent
 } from 'echarts/components'
-import { getAdminStats, checkAdmin, type AdminStats } from '@/api/admin'
+import { getAdminStats, type AdminStats } from '@/api/admin'
 
 // 注册 ECharts 组件
 use([
@@ -496,41 +496,20 @@ const loadStats = async () => {
       stats.value = res.data
     }
   } catch (error: any) {
-    if (error.code === 403) {
-      ElMessage.error('无权访问管理员控制台')
-      router.push('/dashboard')
-    }
+    // 路由守卫已检查权限，此处静默处理其他错误
+    console.error('加载统计数据失败', error)
   } finally {
     loading.value = false
   }
 }
 
-// 检查管理员权限
-const checkAdminAccess = async () => {
-  try {
-    const res = await checkAdmin()
-    if (res.code === 200 && !res.data) {
-      ElMessage.error('无权访问管理员控制台')
-      router.push('/dashboard')
-      return false
-    }
-    return true
-  } catch (error) {
-    router.push('/dashboard')
-    return false
-  }
-}
-
-// 初始化
+// 初始化 - 路由守卫已检查权限，直接加载数据
 onMounted(async () => {
-  const hasAccess = await checkAdminAccess()
-  if (hasAccess) {
-    updateTime()
-    timeInterval = window.setInterval(updateTime, 1000)
-    await loadStats()
-    // 每30秒刷新一次数据
-    statsInterval = window.setInterval(loadStats, 30000)
-  }
+  updateTime()
+  timeInterval = window.setInterval(updateTime, 1000)
+  await loadStats()
+  // 每30秒刷新一次数据
+  statsInterval = window.setInterval(loadStats, 30000)
 })
 
 // 清理

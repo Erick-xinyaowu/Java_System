@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
+import { checkAdmin } from '@/api/admin'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -52,7 +53,7 @@ const router = createRouter({
 })
 
 // 路由守卫
-router.beforeEach((to, _from, next) => {
+router.beforeEach(async (to, _from, next) => {
   // 设置页面标题
   document.title = `${to.meta.title || 'Career Planner'} - 智能职业规划系统`
 
@@ -60,9 +61,26 @@ router.beforeEach((to, _from, next) => {
   const token = localStorage.getItem('token')
   if (to.meta.requiresAuth && !token) {
     next({ name: 'Login', query: { redirect: to.fullPath } })
-  } else {
-    next()
+    return
   }
+
+  // 检查管理员权限
+  if (to.meta.requiresAdmin && token) {
+    try {
+      const res = await checkAdmin()
+      if (res.code !== 200 || !res.data) {
+        // 不是管理员，静默跳转到仪表盘
+        next({ name: 'Dashboard' })
+        return
+      }
+    } catch (error) {
+      // 检查失败，静默跳转
+      next({ name: 'Dashboard' })
+      return
+    }
+  }
+
+  next()
 })
 
 export default router
