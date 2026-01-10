@@ -8,7 +8,8 @@ import {
   Document,
   ChatDotSquare,
   Monitor,
-  UserFilled
+  UserFilled,
+  User
 } from '@element-plus/icons-vue'
 import { ref, onMounted } from 'vue'
 import { checkAdmin } from '@/api/admin'
@@ -24,7 +25,8 @@ const menuItems = computed(() => {
   const items = [
     { path: '/dashboard', title: '数据仪表盘', icon: DataAnalysis },
     { path: '/resume', title: '智能简历分析', icon: Document },
-    { path: '/ai-chat', title: 'AI 职业顾问', icon: ChatDotSquare }
+    { path: '/ai-chat', title: 'AI 职业顾问', icon: ChatDotSquare },
+    { path: '/profile', title: '个人中心', icon: User }
   ]
   if (isAdmin.value) {
     items.push({ path: '/admin', title: '管理员控制台', icon: Monitor })

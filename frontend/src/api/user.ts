@@ -14,9 +14,12 @@ export interface RegisterParams {
 }
 
 export interface UpdateUserParams {
+  nickname?: string
   email?: string
   phone?: string
   avatar?: string
+  gender?: number
+  birthday?: string
 }
 
 // ========== 响应数据类型 ==========
@@ -42,7 +45,11 @@ export interface UserInfoResponse {
     username: string
     email: string
     phone?: string
+    nickname?: string
     avatar?: string
+    gender?: number
+    birthday?: string
+    status?: number
     createdAt?: string
   }
 }
