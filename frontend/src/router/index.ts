@@ -37,6 +37,12 @@ const routes: RouteRecordRaw[] = [
     name: 'AdminConsole',
     component: () => import('@/views/AdminConsolePage.vue'),
     meta: { title: '管理员控制台', requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/users',
+    name: 'UserManage',
+    component: () => import('@/views/UserManagePage.vue'),
+    meta: { title: '用户管理', requiresAuth: true, requiresAdmin: true }
   }
 ]
 

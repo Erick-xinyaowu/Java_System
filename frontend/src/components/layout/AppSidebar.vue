@@ -7,7 +7,8 @@ import {
   DataAnalysis,
   Document,
   ChatDotSquare,
-  Monitor
+  Monitor,
+  UserFilled
 } from '@element-plus/icons-vue'
 import { ref, onMounted } from 'vue'
 import { checkAdmin } from '@/api/admin'
@@ -27,6 +28,7 @@ const menuItems = computed(() => {
   ]
   if (isAdmin.value) {
     items.push({ path: '/admin', title: '管理员控制台', icon: Monitor })
+    items.push({ path: '/admin/users', title: '用户管理', icon: UserFilled })
   }
   return items
 })

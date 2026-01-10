@@ -32,8 +32,18 @@ public interface UserMapper {
     /**
      * 查询所有用户
      */
-    @Select("SELECT * FROM users WHERE status = 1 ORDER BY created_at DESC")
+    @Select("SELECT * FROM users ORDER BY created_at DESC")
     List<User> findAll();
+
+    /**
+     * 搜索用户（按用户名、邮箱、昵称、手机号）
+     */
+    @Select("SELECT * FROM users WHERE username LIKE CONCAT('%', #{keyword}, '%') " +
+            "OR email LIKE CONCAT('%', #{keyword}, '%') " +
+            "OR nickname LIKE CONCAT('%', #{keyword}, '%') " +
+            "OR phone LIKE CONCAT('%', #{keyword}, '%') " +
+            "ORDER BY created_at DESC")
+    List<User> searchUsers(@Param("keyword") String keyword);
 
     /**
      * 插入用户
