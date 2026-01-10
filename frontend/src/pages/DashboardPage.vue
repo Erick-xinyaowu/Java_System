@@ -114,6 +114,16 @@ const chartPalette = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#10b981', '#f
 
 const skillOption = computed(() => ({
   color: chartPalette,
+  title: {
+    text: '技术技能分布',
+    left: 'center',
+    top: 10,
+    textStyle: {
+      fontSize: 16,
+      fontWeight: 600,
+      color: '#1e293b'
+    }
+  },
   tooltip: { 
     trigger: 'item',
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
@@ -132,7 +142,7 @@ const skillOption = computed(() => ({
       name: 'Skill Distribution',
       type: 'pie',
       radius: ['50%', '70%'],
-      center: ['40%', '50%'],
+      center: ['40%', '55%'],
       avoidLabelOverlap: false,
       itemStyle: {
         borderRadius: 8,
@@ -150,6 +160,16 @@ const skillOption = computed(() => ({
 
 const trendOption = computed(() => ({
   color: ['#6366f1'],
+  title: {
+    text: '能力成长趋势',
+    left: 'center',
+    top: 10,
+    textStyle: {
+      fontSize: 16,
+      fontWeight: 600,
+      color: '#1e293b'
+    }
+  },
   tooltip: {
     trigger: 'axis',
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
@@ -160,6 +180,7 @@ const trendOption = computed(() => ({
     left: '3%',
     right: '4%',
     bottom: '3%',
+    top: 60,
     containLabel: true
   },
   xAxis: {
