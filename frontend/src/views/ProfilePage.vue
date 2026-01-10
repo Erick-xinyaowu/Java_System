@@ -3,12 +3,14 @@ import { ref, reactive, onMounted } from 'vue'
 import { User, Message, Location, School, EditPen, Camera } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { ElMessage } from 'element-plus'
+import { updateUserInfo } from '@/api/user'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import BaseCard from '@/components/ui/BaseCard.vue'
 
 const userStore = useUserStore()
 const isEditing = ref(false)
 const loading = ref(false)
+const avatarUploading = ref(false)
 
 // Init data from store
 const formData = reactive({
@@ -52,25 +54,77 @@ async function saveProfile() {
      if (userStore.userInfo) {
        userStore.userInfo = { ...userStore.userInfo, ...formData } as any
      }
-     ElMessage.success('Profile updated successfully')
+     ElMessage.success('个人资料已更新')
      isEditing.value = false
   } catch(e) {
-     ElMessage.error('Failed to update profile')
+     ElMessage.error('更新失败')
   } finally {
      loading.value = false
   }
 }
 
-function handleAvatarSuccess() {
-  ElMessage.success('Avatar uploaded')
+// 头像上传前的检查
+function beforeAvatarUpload(file: File) {
+  const isImage = file.type.startsWith('image/')
+  const isLt2M = file.size / 1024 / 1024 < 2
+
+  if (!isImage) {
+    ElMessage.error('只能上传图片文件!')
+    return false
+  }
+  if (!isLt2M) {
+    ElMessage.error('图片大小不能超过 2MB!')
+    return false
+  }
+  return true
+}
+
+// 处理头像文件选择
+async function handleAvatarChange(uploadFile: any) {
+  const file = uploadFile.raw
+  if (!beforeAvatarUpload(file)) return
+  
+  avatarUploading.value = true
+  
+  try {
+    // 将图片转为 base64 上传
+    const reader = new FileReader()
+    reader.onload = async (e) => {
+      const base64 = e.target?.result as string
+      
+      try {
+        // 调用 API 更新头像
+        await updateUserInfo({ avatar: base64 })
+        
+        // 更新本地 store 中的头像
+        if (userStore.userInfo) {
+          userStore.userInfo = { ...userStore.userInfo, avatar: base64 } as any
+        }
+        
+        ElMessage.success('头像更新成功')
+      } catch (error) {
+        ElMessage.error('头像上传失败')
+      } finally {
+        avatarUploading.value = false
+      }
+    }
+    reader.onerror = () => {
+      ElMessage.error('图片读取失败')
+      avatarUploading.value = false
+    }
+    reader.readAsDataURL(file)
+  } catch (error) {
+    ElMessage.error('头像上传失败')
+    avatarUploading.value = false
+  }
 }
 </script>
 
 <template>
   <div class="profile-page">
     <PageHeader 
-      title="My Profile" 
-      description="Manage your account settings and personal information."
+      title="个人资料" 
+      description="管理您的账户设置和个人信息"
     />
 
     <div class="profile-grid">
@@ -88,31 +142,34 @@ function handleAvatarSuccess() {
                     action="#"
                     :show-file-list="false"
                     :auto-upload="false"
-                    :on-change="handleAvatarSuccess"
+                    :on-change="handleAvatarChange"
+                    :disabled="avatarUploading"
+                    accept="image/*"
                  >
-                    <button class="camera-btn">
-                       <el-icon><Camera /></el-icon>
+                    <button class="camera-btn" :disabled="avatarUploading">
+                       <el-icon v-if="avatarUploading" class="is-loading"><Camera /></el-icon>
+                       <el-icon v-else><Camera /></el-icon>
                     </button>
                  </el-upload>
               </div>
               <h2 class="display-name">{{ formData.nickname || 'User' }}</h2>
-              <p class="role-badge">Student</p>
+              <p class="role-badge">学生</p>
            </div>
            
            <div class="stats-row">
               <div class="stat-item">
                  <div class="stat-val">12</div>
-                 <div class="stat-label">Resumes</div>
+                 <div class="stat-label">简历数</div>
               </div>
               <div class="stat-divider"></div>
               <div class="stat-item">
                  <div class="stat-val">85%</div>
-                 <div class="stat-label">Avg Score</div>
+                 <div class="stat-label">平均分</div>
               </div>
               <div class="stat-divider"></div>
               <div class="stat-item">
                  <div class="stat-val">4</div>
-                 <div class="stat-label">Interviews</div>
+                 <div class="stat-label">面试数</div>
               </div>
            </div>
         </BaseCard>
