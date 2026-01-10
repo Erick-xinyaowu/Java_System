@@ -6,20 +6,41 @@ import {
   House,
   DataAnalysis,
   Document,
-  ChatDotSquare
+  ChatDotSquare,
+  Monitor
 } from '@element-plus/icons-vue'
+import { ref, onMounted } from 'vue'
+import { checkAdmin } from '@/api/admin'
 
 const route = useRoute()
 const router = useRouter()
 const layoutStore = useLayoutStore()
 
 const isCollapsed = computed(() => layoutStore.isCollapsed)
+const isAdmin = ref(false)
 
-const menuItems = [
-  { path: '/dashboard', title: '数据仪表盘', icon: DataAnalysis },
-  { path: '/resume', title: '智能简历分析', icon: Document },
-  { path: '/ai-chat', title: 'AI 职业顾问', icon: ChatDotSquare }
-]
+const menuItems = computed(() => {
+  const items = [
+    { path: '/dashboard', title: '数据仪表盘', icon: DataAnalysis },
+    { path: '/resume', title: '智能简历分析', icon: Document },
+    { path: '/ai-chat', title: 'AI 职业顾问', icon: ChatDotSquare }
+  ]
+  if (isAdmin.value) {
+    items.push({ path: '/admin', title: '管理员控制台', icon: Monitor })
+  }
+  return items
+})
+
+onMounted(async () => {
+  try {
+    const res = await checkAdmin()
+    if (res.code === 200) {
+      isAdmin.value = res.data
+    }
+  } catch (error) {
+    // 忽略错误
+  }
+})
 
 const activeMenu = computed(() => route.path)
 

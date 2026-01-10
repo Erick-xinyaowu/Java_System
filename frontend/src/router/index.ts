@@ -31,6 +31,12 @@ const routes: RouteRecordRaw[] = [
     name: 'AIChat',
     component: () => import('@/views/AIRecommendPage.vue'),
     meta: { title: 'AI 职业顾问', requiresAuth: true }
+  },
+  {
+    path: '/admin',
+    name: 'AdminConsole',
+    component: () => import('@/views/AdminConsolePage.vue'),
+    meta: { title: '管理员控制台', requiresAuth: true, requiresAdmin: true }
   }
 ]
 

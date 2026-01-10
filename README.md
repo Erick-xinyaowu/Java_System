@@ -3,7 +3,7 @@ java system development
 
 1、
 cd backend
-.\mvnw.cmd spring-boot:run
+
 
 2、
 cd frontend
