@@ -18,6 +18,9 @@ export interface UpdateUserParams {
   email?: string
   phone?: string
   avatar?: string
+  school?: string
+  major?: string
+  intro?: string
   gender?: number
   birthday?: string
 }
@@ -47,6 +50,9 @@ export interface UserInfoResponse {
     phone?: string
     nickname?: string
     avatar?: string
+    school?: string
+    major?: string
+    intro?: string
     gender?: number
     birthday?: string
     status?: number

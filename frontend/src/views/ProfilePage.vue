@@ -29,11 +29,12 @@ onMounted(() => {
 
 function resetForm() {
   const info = userStore.userInfo
-  formData.nickname = (info as any)?.nickname || info?.username || ''
+  formData.nickname = info?.nickname || info?.username || ''
   formData.email = info?.email || ''
   formData.phone = info?.phone || ''
-  formData.intro = (info as any)?.intro || ''
-  // Expand with more fields if backend supports it
+  formData.intro = info?.intro || ''
+  formData.school = info?.school || ''
+  formData.major = info?.major || ''
 }
 
 function startEditing() {
@@ -47,12 +48,30 @@ function cancelEditing() {
 
 async function saveProfile() {
   loading.value = true
-  // Simulate API call
   try {
-     await new Promise(r => setTimeout(r, 800))
-     // await userStore.update(formData)
+     // 调用 API 保存用户信息
+     await updateUserInfo({
+       nickname: formData.nickname,
+       email: formData.email,
+       phone: formData.phone,
+       school: formData.school,
+       major: formData.major,
+       intro: formData.intro
+     })
+     
+     // 更新本地 store
      if (userStore.userInfo) {
-       userStore.userInfo = { ...userStore.userInfo, ...formData } as any
+       userStore.userInfo = { 
+         ...userStore.userInfo, 
+         nickname: formData.nickname,
+         email: formData.email,
+         phone: formData.phone,
+         school: formData.school,
+         major: formData.major,
+         intro: formData.intro
+       }
+       // 同时更新 localStorage
+       localStorage.setItem('userInfo', JSON.stringify(userStore.userInfo))
      }
      ElMessage.success('个人资料已更新')
      isEditing.value = false

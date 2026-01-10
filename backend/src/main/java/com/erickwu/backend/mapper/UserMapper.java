@@ -56,7 +56,8 @@ public interface UserMapper {
     /**
      * 更新用户信息
      */
-    @Update("UPDATE users SET nickname = #{nickname}, phone = #{phone}, avatar = #{avatar}, " +
+    @Update("UPDATE users SET nickname = #{nickname}, email = #{email}, phone = #{phone}, avatar = #{avatar}, " +
+            "school = #{school}, major = #{major}, intro = #{intro}, " +
             "gender = #{gender}, birthday = #{birthday}, updated_at = NOW() WHERE id = #{id}")
     int update(User user);
 

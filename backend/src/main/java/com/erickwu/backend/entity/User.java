@@ -47,6 +47,21 @@ public class User implements Serializable {
     private String avatar;
 
     /**
+     * 学校
+     */
+    private String school;
+
+    /**
+     * 专业
+     */
+    private String major;
+
+    /**
+     * 个人简介
+     */
+    private String intro;
+
+    /**
      * 性别：0-未知 1-男 2-女
      */
     private Integer gender;
@@ -139,6 +154,30 @@ public class User implements Serializable {
 
     public void setAvatar(String avatar) {
         this.avatar = avatar;
+    }
+
+    public String getSchool() {
+        return school;
+    }
+
+    public void setSchool(String school) {
+        this.school = school;
+    }
+
+    public String getMajor() {
+        return major;
+    }
+
+    public void setMajor(String major) {
+        this.major = major;
+    }
+
+    public String getIntro() {
+        return intro;
+    }
+
+    public void setIntro(String intro) {
+        this.intro = intro;
     }
 
     public Integer getGender() {

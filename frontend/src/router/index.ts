@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import { checkAdmin } from '@/api/admin'
+import { useUserStore } from '@/stores/user'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -59,6 +60,8 @@ const router = createRouter({
 })
 
 // 路由守卫
+let userInfoFetched = false // 标记是否已获取用户信息
+
 router.beforeEach(async (to, _from, next) => {
   // 设置页面标题
   document.title = `${to.meta.title || 'Career Planner'} - 智能职业规划系统`
@@ -68,6 +71,17 @@ router.beforeEach(async (to, _from, next) => {
   if (to.meta.requiresAuth && !token) {
     next({ name: 'Login', query: { redirect: to.fullPath } })
     return
+  }
+
+  // 如果已登录但还没获取最新用户信息，则获取一次（确保头像等信息最新）
+  if (token && !userInfoFetched) {
+    userInfoFetched = true
+    try {
+      const userStore = useUserStore()
+      await userStore.fetchUserInfo()
+    } catch (error) {
+      console.error('获取用户信息失败:', error)
+    }
   }
 
   // 检查管理员权限
@@ -84,6 +98,11 @@ router.beforeEach(async (to, _from, next) => {
       next({ name: 'Dashboard' })
       return
     }
+  }
+
+  // 登出后重置标记
+  if (to.name === 'Login') {
+    userInfoFetched = false
   }
 
   next()

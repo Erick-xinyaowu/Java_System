@@ -20,6 +20,15 @@ public class UpdateUserDTO {
 
     private String avatar;
 
+    @Size(max = 100, message = "学校名称长度不能超过100个字符")
+    private String school;
+
+    @Size(max = 100, message = "专业名称长度不能超过100个字符")
+    private String major;
+
+    @Size(max = 500, message = "个人简介长度不能超过500个字符")
+    private String intro;
+
     /**
      * 性别：0-未知 1-男 2-女
      */
@@ -57,6 +66,30 @@ public class UpdateUserDTO {
 
     public void setAvatar(String avatar) {
         this.avatar = avatar;
+    }
+
+    public String getSchool() {
+        return school;
+    }
+
+    public void setSchool(String school) {
+        this.school = school;
+    }
+
+    public String getMajor() {
+        return major;
+    }
+
+    public void setMajor(String major) {
+        this.major = major;
+    }
+
+    public String getIntro() {
+        return intro;
+    }
+
+    public void setIntro(String intro) {
+        this.intro = intro;
     }
 
     public Integer getGender() {

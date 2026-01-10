@@ -8,7 +8,11 @@ export interface UserInfo {
   username: string
   email: string
   phone?: string
+  nickname?: string
   avatar?: string
+  school?: string
+  major?: string
+  intro?: string
   createdAt?: string
 }
 
@@ -41,7 +45,8 @@ export const useUserStore = defineStore('user', () => {
       setUserInfo({
         id: res.data.userId,
         username: res.data.username,
-        email: res.data.email || ''
+        email: res.data.email || '',
+        avatar: res.data.avatar || ''
       })
     }
     return res
@@ -56,7 +61,8 @@ export const useUserStore = defineStore('user', () => {
       setUserInfo({
         id: res.data.userId,
         username: res.data.username,
-        email: res.data.email || params.email
+        email: res.data.email || params.email,
+        avatar: res.data.avatar || ''
       })
     }
     return res

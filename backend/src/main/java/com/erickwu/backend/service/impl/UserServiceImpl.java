@@ -120,6 +120,15 @@ public class UserServiceImpl implements UserService {
         if (dto.getAvatar() != null) {
             user.setAvatar(dto.getAvatar());
         }
+        if (dto.getSchool() != null) {
+            user.setSchool(dto.getSchool());
+        }
+        if (dto.getMajor() != null) {
+            user.setMajor(dto.getMajor());
+        }
+        if (dto.getIntro() != null) {
+            user.setIntro(dto.getIntro());
+        }
         if (dto.getGender() != null) {
             user.setGender(dto.getGender());
         }
@@ -169,6 +178,9 @@ public class UserServiceImpl implements UserService {
         vo.setPhone(user.getPhone());
         vo.setNickname(user.getNickname());
         vo.setAvatar(user.getAvatar());
+        vo.setSchool(user.getSchool());
+        vo.setMajor(user.getMajor());
+        vo.setIntro(user.getIntro());
         vo.setGender(user.getGender());
         vo.setBirthday(user.getBirthday());
         vo.setStatus(user.getStatus());
