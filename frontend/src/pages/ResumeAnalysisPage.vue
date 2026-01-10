@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox, ElLoading } from 'element-plus'
-import { Upload, Delete, Document, Plus, ArrowLeft } from '@element-plus/icons-vue'
+import { Upload, Delete, Document, Plus, ArrowLeft, Download } from '@element-plus/icons-vue'
 import MarkdownIt from 'markdown-it'
+import html2canvas from 'html2canvas'
+import { jsPDF } from 'jspdf'
 import {
   getResumeVersions,
   getResumeVersionDetail,
@@ -226,9 +228,157 @@ async function handleDeleteVersion(id: number, event: Event) {
   }
 }
 
-// 导出PDF（后续实现）
-function exportPDF() {
-  ElMessage.info('导出PDF功能开发中...')
+// 导出PDF状态
+const exporting = ref(false)
+
+// 导出PDF功能
+async function exportPDF() {
+  if (!selectedVersion.value?.hasAnalysis) {
+    ElMessage.warning('当前版本暂无分析报告，无法导出')
+    return
+  }
+
+  exporting.value = true
+  const loadingInstance = ElLoading.service({
+    lock: true,
+    text: '正在生成PDF文件，请稍候...',
+    background: 'rgba(0, 0, 0, 0.7)',
+  })
+
+  try {
+    // 等待DOM更新
+    await nextTick()
+
+    // 获取要导出的内容区域
+    const reportElement = document.querySelector('.report-body') as HTMLElement
+    const infoElement = document.querySelector('.report-info') as HTMLElement
+    
+    if (!reportElement) {
+      throw new Error('未找到报告内容')
+    }
+
+    // 创建一个临时容器来组合内容
+    const tempContainer = document.createElement('div')
+    tempContainer.style.cssText = `
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      width: 800px;
+      padding: 40px;
+      background: white;
+      font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+    `
+    
+    // 添加标题
+    const title = document.createElement('div')
+    title.innerHTML = `
+      <div style="text-align: center; margin-bottom: 30px;">
+        <h1 style="font-size: 28px; color: #303133; margin: 0 0 10px 0;">📊 智能简历分析报告</h1>
+        <p style="color: #909399; font-size: 14px;">Career Planner 智能职业规划系统</p>
+      </div>
+    `
+    tempContainer.appendChild(title)
+
+    // 添加基本信息
+    if (infoElement) {
+      const infoClone = document.createElement('div')
+      infoClone.innerHTML = `
+        <div style="margin-bottom: 24px; padding: 16px; background: #f5f7fa; border-radius: 8px;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+            <tr>
+              <td style="padding: 8px; color: #909399; width: 80px;">候选人</td>
+              <td style="padding: 8px; color: #303133;">${selectedVersion.value?.candidateName || '未知'}</td>
+              <td style="padding: 8px; color: #909399; width: 80px;">版本</td>
+              <td style="padding: 8px; color: #303133;">版本 ${selectedVersion.value?.versionNumber}</td>
+            </tr>
+            <tr>
+              <td style="padding: 8px; color: #909399;">文件名</td>
+              <td style="padding: 8px; color: #303133;">${selectedVersion.value?.fileName}</td>
+              <td style="padding: 8px; color: #909399;">导出时间</td>
+              <td style="padding: 8px; color: #303133;">${new Date().toLocaleString('zh-CN')}</td>
+            </tr>
+          </table>
+        </div>
+      `
+      tempContainer.appendChild(infoClone)
+    }
+
+    // 克隆报告内容
+    const reportClone = reportElement.cloneNode(true) as HTMLElement
+    reportClone.style.cssText = `
+      background: white;
+      padding: 0;
+      box-shadow: none;
+      font-size: 14px;
+      line-height: 1.8;
+    `
+    tempContainer.appendChild(reportClone)
+
+    // 添加页脚
+    const footer = document.createElement('div')
+    footer.innerHTML = `
+      <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ebeef5; text-align: center; color: #909399; font-size: 12px;">
+        <p>本报告由 Career Planner 智能职业规划系统自动生成</p>
+        <p>生成时间：${new Date().toLocaleString('zh-CN')}</p>
+      </div>
+    `
+    tempContainer.appendChild(footer)
+
+    document.body.appendChild(tempContainer)
+
+    // 使用 html2canvas 生成图像
+    const canvas = await html2canvas(tempContainer, {
+      scale: 2, // 提高清晰度
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      logging: false
+    })
+
+    // 移除临时容器
+    document.body.removeChild(tempContainer)
+
+    // 创建 PDF
+    const imgData = canvas.toDataURL('image/jpeg', 0.95)
+    const imgWidth = 210 // A4 宽度 (mm)
+    const pageHeight = 297 // A4 高度 (mm)
+    const imgHeight = (canvas.height * imgWidth) / canvas.width
+    
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    })
+
+    let heightLeft = imgHeight
+    let position = 0
+
+    // 添加第一页
+    pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight)
+    heightLeft -= pageHeight
+
+    // 如果内容超过一页，添加更多页
+    while (heightLeft > 0) {
+      position = heightLeft - imgHeight
+      pdf.addPage()
+      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight)
+      heightLeft -= pageHeight
+    }
+
+    // 生成文件名
+    const fileName = `简历分析报告_${selectedVersion.value?.candidateName || '未知'}_v${selectedVersion.value?.versionNumber}_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.pdf`
+    
+    // 下载 PDF
+    pdf.save(fileName)
+    
+    ElMessage.success('PDF导出成功！')
+  } catch (error) {
+    console.error('PDF导出失败:', error)
+    ElMessage.error('PDF导出失败，请重试')
+  } finally {
+    loadingInstance.close()
+    exporting.value = false
+  }
 }
 
 // 页面加载时获取版本列表
@@ -301,8 +451,13 @@ onMounted(() => {
             <el-icon><Upload /></el-icon>
             分析新简历
           </el-button>
-          <el-button @click="exportPDF" :disabled="!selectedVersion?.hasAnalysis">
-            导出PDF
+          <el-button 
+            @click="exportPDF" 
+            :disabled="!selectedVersion?.hasAnalysis"
+            :loading="exporting"
+          >
+            <el-icon v-if="!exporting"><Download /></el-icon>
+            {{ exporting ? '导出中...' : '导出PDF' }}
           </el-button>
         </div>
       </div>
