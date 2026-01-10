@@ -305,16 +305,38 @@ async function handleAvatarChange(uploadFile: any) {
 .identity-card {
   text-align: center;
   position: relative;
+  overflow: hidden;
 }
 
 .cover-photo {
-  height: 120px;
-  background: linear-gradient(135deg, var(--color-primary-400), var(--color-primary-600));
+  height: 140px;
+  background: var(--gradient-primary);
+  position: relative;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -30%;
+    width: 80%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 60%);
+  }
+  
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -50%;
+    left: -20%;
+    width: 60%;
+    height: 150%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 50%);
+  }
 }
 
 .avatar-section {
   position: relative;
-  margin-top: -50px;
+  margin-top: -55px;
   margin-bottom: 24px;
   display: flex;
   flex-direction: column;
@@ -323,86 +345,103 @@ async function handleAvatarChange(uploadFile: any) {
 
 .avatar-wrapper {
   position: relative;
-  border: 4px solid var(--color-white);
+  border: 5px solid var(--color-white);
   border-radius: 50%;
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-lg);
+  background: white;
 }
 
 .user-avatar {
-  background-color: var(--color-neutral-100);
-  color: var(--color-neutral-400);
+  background: var(--gradient-primary);
+  color: white;
 }
 
 .camera-btn {
   position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 32px;
-  height: 32px;
+  bottom: 2px;
+  right: 2px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  background-color: var(--color-white);
-  border: 1px solid var(--color-neutral-200);
-  color: var(--color-neutral-600);
+  background: var(--gradient-primary);
+  border: 3px solid white;
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: var(--shadow-sm);
-  transition: all 0.2s;
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition-normal);
   
   &:hover {
-    color: var(--color-primary-600);
-    border-color: var(--color-primary-200);
+    transform: scale(1.1);
+    box-shadow: var(--shadow-lg);
+  }
+  
+  &:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
   }
 }
 
 .display-name {
-  margin-top: 12px;
-  font-size: 1.25rem;
-  font-weight: 700;
+  margin-top: 16px;
+  font-size: 1.5rem;
+  font-weight: 800;
   color: var(--color-neutral-900);
+  letter-spacing: -0.02em;
 }
 
 .role-badge {
-  display: inline-block;
-  margin-top: 4px;
-  padding: 2px 10px;
-  background-color: var(--color-primary-50);
-  color: var(--color-primary-600);
-  border-radius: 12px;
-  font-size: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 6px 14px;
+  background: linear-gradient(135deg, var(--color-primary-50) 0%, rgba(139, 92, 246, 0.1) 100%);
+  color: var(--color-primary-700);
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
   font-weight: 600;
+  
+  &::before {
+    content: '🎓';
+  }
 }
 
 .stats-row {
   display: flex;
   justify-content: space-around;
-  padding: 24px 16px;
+  padding: 28px 20px;
   border-top: 1px solid var(--color-neutral-100);
+  background: var(--color-neutral-50);
 }
 
 .stat-item {
   display: flex;
   flex-direction: column;
   align-items: center;
+  padding: 0 16px;
 }
 
 .stat-val {
-  font-size: 1.125rem;
-  font-weight: 700;
+  font-size: 1.5rem;
+  font-weight: 800;
   color: var(--color-neutral-900);
+  letter-spacing: -0.02em;
 }
 
 .stat-label {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   color: var(--color-neutral-500);
-  margin-top: 2px;
+  margin-top: 4px;
+  font-weight: 500;
 }
 
 .stat-divider {
   width: 1px;
-  background-color: var(--color-neutral-200);
-  height: 32px;
+  background: linear-gradient(180deg, transparent, var(--color-neutral-200), transparent);
+  height: 40px;
 }
 
 /* Settings Form */
@@ -431,7 +470,7 @@ async function handleAvatarChange(uploadFile: any) {
   
   label {
     font-size: 0.875rem;
-    font-weight: 500;
+    font-weight: 600;
     color: var(--color-neutral-700);
   }
 }
@@ -443,76 +482,102 @@ async function handleAvatarChange(uploadFile: any) {
   
   .input-icon {
     position: absolute;
-    left: 12px;
+    left: 14px;
     color: var(--color-neutral-400);
     z-index: 1;
+    transition: color var(--transition-fast);
+  }
+  
+  &:focus-within .input-icon {
+    color: var(--color-primary-500);
   }
 }
 
 .custom-input, .custom-textarea {
   width: 100%;
-  padding: 10px 12px 10px 36px;
-  border: 1px solid var(--color-neutral-300);
-  border-radius: var(--radius-md);
+  padding: 12px 14px 12px 42px;
+  border: 1px solid var(--color-neutral-200);
+  border-radius: var(--radius-lg);
   font-size: 0.95rem;
   color: var(--color-neutral-800);
-  transition: all 0.2s;
+  transition: all var(--transition-normal);
   background-color: var(--color-white);
   
   &:disabled {
     background-color: var(--color-neutral-50);
-    color: var(--color-neutral-500);
+    color: var(--color-neutral-600);
     cursor: not-allowed;
+  }
+  
+  &:not(:disabled):hover {
+    border-color: var(--color-neutral-300);
   }
   
   &:not(:disabled):focus {
     border-color: var(--color-primary-500);
-    box-shadow: 0 0 0 3px var(--color-primary-100);
+    box-shadow: var(--shadow-focus);
     outline: none;
   }
 }
 
 .custom-textarea {
-  padding: 12px;
+  padding: 14px;
   resize: vertical;
+  min-height: 100px;
 }
 
 /* Actions */
 .action-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: var(--radius-md);
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: var(--radius-lg);
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  border: 1px solid var(--color-neutral-300);
+  border: 1px solid var(--color-neutral-200);
   background-color: var(--color-white);
   color: var(--color-neutral-700);
-  transition: all 0.2s;
+  transition: all var(--transition-normal);
   
   &:hover {
-    background-color: var(--color-neutral-50);
+    background-color: var(--color-neutral-100);
     color: var(--color-neutral-900);
+    transform: translateY(-1px);
   }
   
   &.save {
-    background-color: var(--color-primary-600);
+    background: var(--gradient-primary);
     color: white;
     border: none;
+    box-shadow: var(--shadow-colored);
     
-    &:hover { background-color: var(--color-primary-700); }
+    &:hover { 
+      box-shadow: 0 8px 25px -8px rgba(99, 102, 241, 0.5);
+      transform: translateY(-2px);
+    }
+    
+    &:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
   }
   
   &.cancel {
      border-color: transparent;
-     &:hover { background-color: var(--color-error); color: white; }
+     color: var(--color-neutral-500);
+     
+     &:hover { 
+       background-color: var(--color-error-light); 
+       color: var(--color-error); 
+     }
   }
 }
 
 .edit-actions {
   display: flex;
-  gap: 8px;
+  gap: 10px;
 }
 </style>

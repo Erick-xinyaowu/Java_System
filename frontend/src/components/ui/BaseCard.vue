@@ -55,25 +55,27 @@ const cardClass = computed(() => {
 <style scoped lang="scss">
 .base-card {
   background-color: var(--color-white);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   box-shadow: var(--shadow-sm);
-  border: 1px solid var(--color-neutral-200);
-  transition: box-shadow 0.3s ease, border-color 0.3s ease;
-  overflow: hidden; /* Ensure content respects border radius */
+  border: 1px solid var(--color-neutral-100);
+  transition: all var(--transition-normal);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
+  position: relative;
 
   &:hover {
     box-shadow: var(--shadow-md);
-    border-color: var(--color-neutral-300);
+    border-color: var(--color-neutral-200);
   }
 }
 
 .card-header {
-  padding: 16px 24px;
+  padding: 20px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
   
   &.has-border {
     border-bottom: 1px solid var(--color-neutral-100);
@@ -83,27 +85,28 @@ const cardClass = computed(() => {
 .header-left {
   display: flex;
   flex-direction: column;
+  gap: 4px;
 }
 
 .card-title {
-  font-size: 1.125rem; /* 18px */
-  font-weight: 600;
+  font-size: 1.125rem;
+  font-weight: 700;
   color: var(--color-neutral-900);
   line-height: 1.4;
+  letter-spacing: -0.01em;
 }
 
 .card-subtitle {
   font-size: 0.875rem;
   color: var(--color-neutral-500);
-  margin-top: 4px;
 }
 
 .card-body {
   padding: 24px;
   flex: 1;
-  position: relative; // For loading overlays if needed
-  min-height: 0; // Critical for nested flex scroll
-  overflow: hidden; // Let children handle their own scroll
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
 
   &.no-padding {
     padding: 0;
