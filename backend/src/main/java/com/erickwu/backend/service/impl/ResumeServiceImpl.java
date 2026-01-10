@@ -413,7 +413,9 @@ public class ResumeServiceImpl implements ResumeService {
 
         // 2. 获取或创建简历
         Resume resume = resumeMapper.findByUserId(userId);
-        if (resume == null) {
+        boolean isNewResume = (resume == null);
+        
+        if (isNewResume) {
             // 创建新简历
             resume = new Resume();
             resume.setUserId(userId);
@@ -443,7 +445,28 @@ public class ResumeServiceImpl implements ResumeService {
         version.setVersionNote(versionNote);
         resumeVersionMapper.insert(version);
 
-        // 5. 设置版本ID到返回结果，便于前端跳转
+        // 5. 自动保存技能数据到数据库（用于仪表盘技能分布展示）
+        final Long resumeId = resume.getId();
+        if (parseResult.getSkills() != null && !parseResult.getSkills().isEmpty()) {
+            // 清除旧的技能数据（每次上传新简历都更新技能）
+            skillMapper.deleteByResumeId(resumeId);
+            
+            // 保存新的技能数据
+            List<Skill> skills = parseResult.getSkills().stream()
+                    .map(s -> {
+                        Skill skill = new Skill();
+                        skill.setResumeId(resumeId);
+                        skill.setName(s.getName());
+                        skill.setLevel(s.getLevel());
+                        skill.setCategory(s.getCategory());
+                        skill.setYears(s.getYears());
+                        return skill;
+                    })
+                    .collect(Collectors.toList());
+            skillMapper.batchInsert(skills);
+        }
+
+        // 6. 设置版本ID到返回结果，便于前端跳转
         parseResult.setVersionId(version.getId());
 
         return parseResult;

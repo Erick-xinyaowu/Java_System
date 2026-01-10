@@ -56,10 +56,26 @@ const skillData = ref<CategoryData[]>([])
 // 技能饼图配置
 const skillOption = computed(() => ({
   tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+  legend: {
+    orient: 'vertical',
+    right: 10,
+    top: 'center',
+    itemGap: 12,
+    itemWidth: 14,
+    itemHeight: 14,
+    textStyle: {
+      fontSize: 13,
+      color: '#606266'
+    },
+    data: skillData.value.length > 0 
+      ? skillData.value.map(item => item.name)
+      : ['暂无数据']
+  },
   series: [
     {
       type: 'pie',
-      radius: ['40%', '70%'],
+      radius: ['40%', '65%'],
+      center: ['35%', '50%'],
       avoidLabelOverlap: false,
       itemStyle: {
         borderRadius: 10,
