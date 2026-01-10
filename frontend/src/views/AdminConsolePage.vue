@@ -570,11 +570,25 @@ onUnmounted(() => {
 }
 
 .status-tag {
-  display: flex;
-  align-items: center;
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
   gap: 6px;
-  padding: 8px 16px;
+  padding: 8px 16px !important;
   font-size: 14px;
+  height: auto !important;
+  line-height: 1 !important;
+  
+  :deep(.el-icon) {
+    order: -1;
+    margin-right: 0;
+    vertical-align: middle;
+  }
+  
+  span {
+    vertical-align: middle;
+    line-height: 1;
+  }
 }
 
 .current-time {
