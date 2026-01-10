@@ -2,6 +2,15 @@ import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import router from '@/router'
 
+// API 统一响应格式
+export interface ApiResponse<T = any> {
+  code: number
+  message: string
+  data: T
+  timestamp: number
+  success?: boolean
+}
+
 // 创建 axios 实例，连接后端服务
 const request = axios.create({
   baseURL: 'http://localhost:8080/api',  // 后端服务地址

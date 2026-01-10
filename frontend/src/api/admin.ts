@@ -1,4 +1,4 @@
-import request from './request'
+import request, { type ApiResponse } from './request'
 
 /**
  * 管理员统计数据
@@ -70,15 +70,15 @@ export interface UserManageRequest {
 /**
  * 获取管理员控制台统计数据
  */
-export const getAdminStats = () => {
-  return request.get<AdminStats>('/admin/stats')
+export const getAdminStats = (): Promise<ApiResponse<AdminStats>> => {
+  return request.get('/admin/stats')
 }
 
 /**
  * 检查当前用户是否是管理员
  */
-export const checkAdmin = () => {
-  return request.get<boolean>('/admin/check')
+export const checkAdmin = (): Promise<ApiResponse<boolean>> => {
+  return request.get('/admin/check')
 }
 
 // ==================== 用户管理 API ====================
@@ -86,55 +86,55 @@ export const checkAdmin = () => {
 /**
  * 获取所有用户
  */
-export const getAllUsers = () => {
-  return request.get<UserManage[]>('/admin/users')
+export const getAllUsers = (): Promise<ApiResponse<UserManage[]>> => {
+  return request.get('/admin/users')
 }
 
 /**
  * 搜索用户
  */
-export const searchUsers = (keyword: string) => {
-  return request.get<UserManage[]>('/admin/users/search', { params: { keyword } })
+export const searchUsers = (keyword: string): Promise<ApiResponse<UserManage[]>> => {
+  return request.get('/admin/users/search', { params: { keyword } })
 }
 
 /**
  * 获取单个用户
  */
-export const getUserById = (id: number) => {
-  return request.get<UserManage>(`/admin/users/${id}`)
+export const getUserById = (id: number): Promise<ApiResponse<UserManage>> => {
+  return request.get(`/admin/users/${id}`)
 }
 
 /**
  * 创建用户
  */
-export const createUser = (data: UserManageRequest) => {
-  return request.post<UserManage>('/admin/users', data)
+export const createUser = (data: UserManageRequest): Promise<ApiResponse<UserManage>> => {
+  return request.post('/admin/users', data)
 }
 
 /**
  * 更新用户
  */
-export const updateUser = (id: number, data: UserManageRequest) => {
-  return request.put<UserManage>(`/admin/users/${id}`, data)
+export const updateUser = (id: number, data: UserManageRequest): Promise<ApiResponse<UserManage>> => {
+  return request.put(`/admin/users/${id}`, data)
 }
 
 /**
  * 删除用户
  */
-export const deleteUser = (id: number) => {
+export const deleteUser = (id: number): Promise<ApiResponse<void>> => {
   return request.delete(`/admin/users/${id}`)
 }
 
 /**
  * 更新用户状态
  */
-export const updateUserStatus = (id: number, status: number) => {
+export const updateUserStatus = (id: number, status: number): Promise<ApiResponse<void>> => {
   return request.put(`/admin/users/${id}/status`, { status })
 }
 
 /**
  * 重置用户密码
  */
-export const resetUserPassword = (id: number, password: string) => {
+export const resetUserPassword = (id: number, password: string): Promise<ApiResponse<void>> => {
   return request.put(`/admin/users/${id}/password`, { password })
 }

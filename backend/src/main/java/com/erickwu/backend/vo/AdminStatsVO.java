@@ -1,7 +1,6 @@
 package com.erickwu.backend.vo;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * 管理员统计数据 VO
